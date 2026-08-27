@@ -52,7 +52,8 @@ async def consultar(turnos: list[dict]) -> dict:
     payload = {
         "model": MODELO_IA,
         "messages": _mensajes_api(turnos),
-        "temperature": 0.3,
+        # Sin `temperature`: algunos modelos (p. ej. gpt-5.6-luna) solo aceptan el
+        # valor por defecto y devuelven 400 con cualquier otro. No se envía.
         "response_format": {"type": "json_schema", "json_schema": ESQUEMA_SALIDA},
     }
     headers = {"Authorization": f"Bearer {IA_API_KEY}", "Content-Type": "application/json"}
