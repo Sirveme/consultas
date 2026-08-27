@@ -3,11 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b1512">
+  <meta name="theme-color" content="#08110e">
   <title>¿Qué necesitas resolver? · Perú Sistemas PRO</title>
-  <meta name="description" content="Cuéntanos tu necesidad con tus propias palabras. Te ayudamos a explicarla y te contactamos.">
-  <link rel="stylesheet" href="/static/estilos.css">
+  <meta name="description" content="Cuéntanos tu necesidad con tus propias palabras. Te ayudamos a explicarla y te llevas un informe.">
   <link rel="icon" href="/favicon.ico" sizes="any">
+
+  <!-- Fuentes. El CUERPO (IBM Plex Sans) va en la ruta crítica con preload;
+       display + mono se difieren para no bloquear el primer render. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+  <link rel="stylesheet" media="print" onload="this.media='all'"
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Mono:wght@500&display=swap">
+  <noscript><link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=IBM+Plex+Mono:wght@500&display=swap"></noscript>
+
+  <link rel="stylesheet" href="/static/estilos.css">
   {% if meta_pixel_id %}
   <script>
     !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -20,41 +34,48 @@
   {% endif %}
 </head>
 <body data-wa="{{ whatsapp }}">
+
+  <!-- Riel de expediente: barra arriba (móvil) / columna izquierda (escritorio) -->
+  <nav class="riel mono" id="riel" data-fase="iniciada" aria-label="Expediente técnico">
+    <ol>
+      <li class="paso" data-paso="necesidad"><i class="pico"></i><span>Necesidad</span></li>
+      <li class="paso" data-paso="contexto"><i class="pico"></i><span>Contexto</span></li>
+      <li class="paso" data-paso="alcance"><i class="pico"></i><span>Alcance</span></li>
+      <li class="paso" data-paso="entrega"><i class="pico"></i><span>Entrega</span></li>
+    </ol>
+    <p class="riel-carga oculto" id="riel-carga">Leyendo lo que escribiste...</p>
+    <p class="riel-wa oculto" id="riel-wa">Está demorando más de lo normal.
+      <a class="wa-link" data-wa-click="carga" href="{{ whatsapp }}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>.</p>
+  </nav>
+
   <main class="wrap">
-    <header class="brand"><span class="mark">◈</span> Perú Sistemas <b>PRO</b></header>
-
-    <!-- Indicador de carga (texto que rota; aviso de WhatsApp a los 15s) -->
-    <div id="cargando" class="cargando oculto" aria-live="polite">
-      <span class="puntos"><i></i><i></i><i></i></span>
-      <span id="cargando-txt">Leyendo lo que escribiste...</span>
-      <p id="cargando-wa" class="wa-linea oculto">Está demorando más de lo normal. Si prefieres,
-        <a class="wa-link" data-wa-click="cargando" href="{{ whatsapp }}" target="_blank" rel="noopener">escríbenos por WhatsApp</a>.</p>
-    </div>
-
     <!-- Pantalla 1 -->
     <section id="s1" class="pantalla">
-      <h1>¿QUÉ NECESITAS RESOLVER?</h1>
+      <figure class="video">
+        <video id="vid" poster="/static/video-cabecera-poster.jpg" preload="none" playsinline controls>
+          <source src="/static/video-cabecera.mp4" type="video/mp4">
+        </video>
+        <button class="video-play" id="vplay" aria-label="Reproducir video"><span>▶</span></button>
+      </figure>
+      <h1 class="display">¿Qué necesitas resolver?</h1>
       <p class="sub">Cuéntanos con tus propias palabras. No necesitas saber de tecnología.</p>
-      <textarea id="txt" maxlength="1500" rows="5"
-        placeholder="Ejemplo: Tengo una bodega y quiero controlar mi stock y saber qué se vende más, hoy lo anoto en un cuaderno…"></textarea>
+      <textarea id="txt" maxlength="1500" rows="4"
+        placeholder="Ejemplo: Tengo una bodega y quiero controlar mi stock y saber qué se vende más; hoy lo anoto en un cuaderno…"></textarea>
       <button class="btn" id="b-continuar">CONTINUAR →</button>
-      <p class="mini">La IA te hará un par de preguntas para entenderte mejor.</p>
-      <p class="wa-linea">¿Prefieres escribirnos directo?
-        <a class="wa-link" data-wa-click="p1" href="{{ whatsapp }}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>.</p>
+      <p class="mini mono">La IA te hará un par de preguntas para entenderte mejor.</p>
     </section>
 
-    <!-- Pantalla 2 -->
+    <!-- Pantalla 2: conversación -->
     <section id="s2" class="pantalla oculto">
       <div id="conv"></div>
       <div id="chips" class="chips"></div>
       <textarea id="txt2" maxlength="1500" rows="3" placeholder="Escribe tu respuesta…"></textarea>
       <button class="btn" id="b-responder">Enviar</button>
-      <p class="wa-linea"><a class="wa-link" data-wa-click="p2" href="{{ whatsapp }}" target="_blank" rel="noopener">Prefiero WhatsApp</a></p>
     </section>
 
     <!-- Pantalla 3: resumen -->
     <section id="s3" class="pantalla oculto">
-      <h2>ESTO ES LO QUE ENTENDIMOS</h2>
+      <h2 class="display">Esto es lo que entendimos</h2>
       <div id="resumen" class="resumen"></div>
       <div class="row-btns">
         <button class="btn" id="b-ok">Sí, está bien</button>
@@ -66,71 +87,83 @@
       </div>
     </section>
 
-    <!-- Pantalla de calificación (opcional, entre resumen y contacto) -->
+    <!-- Pantalla de calificación (opcional) -->
     <section id="sc" class="pantalla oculto">
-      <h2>¿NOS AYUDAS CON UN PAR DE DATOS MÁS?</h2>
+      <h2 class="display">¿Nos ayudas con un par de datos más?</h2>
       <p class="sub">Es opcional, pero nos ayuda a prepararte una mejor propuesta.</p>
 
       <div class="grupo" data-tipo="single">
-        <p class="glabel">¿Cómo están hoy?</p>
+        <p class="glabel mono">¿Cómo están hoy?</p>
         <button class="opt" data-key="sist_ninguno">No usamos ningún sistema</button>
         <button class="opt" data-key="sist_excel">Usamos Excel o cuadernos</button>
         <button class="opt" data-key="sist_corto">Tenemos un sistema pero se nos queda corto</button>
         <button class="opt" data-key="sist_mejorar">Tenemos un sistema y queremos mejorarlo</button>
       </div>
-
       <div class="grupo" data-tipo="multi" id="g-uso">
-        <p class="glabel">¿Cómo lo usarían?</p>
+        <p class="glabel mono">¿Cómo lo usarían?</p>
         <button class="opt" data-key="uso_celular">Desde celular</button>
         <button class="opt" data-key="uso_pc">Desde computadora</button>
         <button class="opt" data-key="uso_varios">Desde varios locales o sedes</button>
         <button class="opt" data-key="uso_sinint">En lugares con internet malo o sin internet</button>
       </div>
-
       <div class="grupo" data-tipo="single">
-        <p class="glabel">¿Tienen a alguien de sistemas?</p>
+        <p class="glabel mono">¿Tienen a alguien de sistemas?</p>
         <button class="opt" data-key="cap_tecnico">Sí, tenemos personal técnico</button>
         <button class="opt" data-key="cap_arregla">Alguien se las arregla</button>
         <button class="opt" data-key="cap_ninguno">No, ninguno</button>
       </div>
-
       <div class="grupo" data-tipo="single">
-        <p class="glabel">¿Qué tipo de organización son?</p>
+        <p class="glabel mono">¿Qué tipo de organización son?</p>
         <button class="opt" data-key="org_privada">Empresa privada</button>
         <button class="opt" data-key="org_publica">Institución pública</button>
         <button class="opt" data-key="org_colegio">Colegio profesional o asociación</button>
         <button class="opt" data-key="org_emprend">Emprendimiento personal</button>
       </div>
-
       <div class="row-btns">
         <button class="btn" id="b-calif-continuar">Continuar</button>
         <button class="btn sec" id="b-calif-saltar">Prefiero saltar esto</button>
       </div>
     </section>
 
-    <!-- Pantalla 4: contacto -->
+    <!-- Pantalla 4: contacto (2 columnas) -->
     <section id="s4" class="pantalla oculto">
-      <h2>¿A DÓNDE TE CONTACTAMOS?</h2>
+      <h2 class="display">¿A dónde te contactamos?</h2>
       <p id="s4-msg" class="sub"></p>
-      <label>Nombre* <input id="c-nombre" type="text" autocomplete="name"></label>
-      <label>Empresa <input id="c-empresa" type="text"></label>
-      <label>Cargo <input id="c-cargo" type="text"></label>
-      <label>Celular / WhatsApp* <input id="c-celular" type="tel" inputmode="numeric" autocomplete="tel"></label>
-      <label>Correo <input id="c-correo" type="email" autocomplete="email"></label>
-      <label>Ciudad* <input id="c-ciudad" type="text"></label>
+      <div class="form-grid">
+        <label class="full">Nombre* <input id="c-nombre" type="text" autocomplete="name"></label>
+        <label class="full">Celular / WhatsApp* <input id="c-celular" type="tel" inputmode="numeric" autocomplete="tel"></label>
+        <label>Empresa <input id="c-empresa" type="text"></label>
+        <label>Cargo <input id="c-cargo" type="text"></label>
+        <label>Correo <input id="c-correo" type="email" autocomplete="email"></label>
+        <label>Ciudad* <input id="c-ciudad" type="text"></label>
+      </div>
       <div class="hp"><input id="c-hp" type="text" tabindex="-1" autocomplete="off"></div>
       <label class="chk"><input type="checkbox" id="c-priv"> Mi consulta es privada</label>
       <label class="chk"><input type="checkbox" id="c-pub"> Autorizo mostrar una versión resumida y anónima de mi consulta</label>
-      <button class="btn" id="b-contacto">Enviar</button>
+      <button class="btn" id="b-contacto">Enviar y ver mi informe</button>
       <div class="msg" id="c-msg" role="status" aria-live="polite"></div>
     </section>
 
-    <!-- Gracias -->
+    <!-- Pantalla final: el informe que se lleva la persona -->
     <section id="sg" class="pantalla oculto">
-      <h2>¡Gracias! 🎉</h2>
-      <p class="sub" id="sg-msg">Registramos tu consulta. Te contactaremos pronto.</p>
-      <a class="btn wa" data-wa-click="gracias" href="{{ whatsapp }}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>
+      <div id="informe" class="informe">
+        <h2 class="display">Tu informe</h2>
+        <p class="sub">Es tuyo, aunque no trabajes con nosotros.</p>
+        <div class="bloque"><h3 class="mono">Lo que entendimos</h3><div id="inf-1"></div></div>
+        <div class="bloque"><h3 class="mono">Preguntas que deberías tener resueltas</h3><ul id="inf-2"></ul></div>
+        <div class="bloque"><h3 class="mono">Lo mínimo para implementarlo</h3><ul id="inf-3"></ul></div>
+        <div class="bloque"><h3 class="mono">Lo que todavía falta definir</h3><ul id="inf-4"></ul></div>
+        <footer class="psp">
+          <b>Perú Sistemas PRO</b> · <a class="wa-link" data-wa-click="informe" href="{{ whatsapp }}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>
+        </footer>
+      </div>
+      <div class="row-btns no-print"><button class="btn" id="b-descargar">Descargar informe</button></div>
     </section>
+
+    <!-- WhatsApp secundario: alternativa real, presente en todo el flujo -->
+    <a class="wa-fijo no-print" id="wa-fijo" data-wa-click="fijo" href="{{ whatsapp }}" target="_blank" rel="noopener">
+      <span class="wa-ico" aria-hidden="true">✆</span> Escríbenos por WhatsApp
+    </a>
   </main>
   <script src="/static/app.js"></script>
 </body>

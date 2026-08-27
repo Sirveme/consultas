@@ -6,6 +6,10 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#0b1512">
   <title>Panel · Consultas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="/static/estilos.css">
 </head>
 <body>
@@ -49,6 +53,18 @@
     <div class="calif-item"><b>Nota de calificación:</b> <span class="val">{{ c.ficha.get('nota_calificacion') }}</span></div>
     {% endif %}
 
+    {% set inf = c.ficha.get('informe_visitante') or {} %}
+    {% if inf.get('lo_que_entendimos') or inf.get('preguntas') %}
+    <h3>Informe del visitante</h3>
+    <div class="calif-item"><b>Lo que entendimos:</b> <span class="val">{{ inf.get('lo_que_entendimos') or '—' }}</span></div>
+    <div class="calif-item"><b>Preguntas:</b>
+      <ul class="kv" style="margin:4px 0 0">{% for q in inf.get('preguntas') or [] %}<li>{{ q }}</li>{% endfor %}</ul></div>
+    <div class="calif-item"><b>Mínimo para implementar:</b>
+      <ul class="kv" style="margin:4px 0 0">{% for q in inf.get('minimo_para_implementar') or [] %}<li>{{ q }}</li>{% endfor %}</ul></div>
+    <div class="calif-item"><b>Falta definir:</b>
+      <ul class="kv" style="margin:4px 0 0">{% for q in inf.get('falta_definir') or [] %}<li>{{ q }}</li>{% endfor %}</ul></div>
+    {% endif %}
+
     <h3>Cambiar estado</h3>
     <form method="post" action="/panel/estado" style="display:flex;gap:8px;align-items:center">
       <input type="hidden" name="id" value="{{ c.id }}">
@@ -62,7 +78,7 @@
     <div class="conv-det" style="display:flex;flex-direction:column;gap:8px">
       {% for m in detalle.mensajes %}
       <div class="burbuja {{ 'usuario' if m.rol=='usuario' else 'ia' }}">
-        <b style="font-size:11px;color:var(--muted)">{{ m.rol }}{% if m.tokens_salida %} · {{ m.tokens_entrada }}/{{ m.tokens_salida }} tok{% endif %}</b><br>{{ m.contenido }}
+        <b style="font-size:11px;color:var(--texto-suave)">{{ m.rol }}{% if m.tokens_salida %} · {{ m.tokens_entrada }}/{{ m.tokens_salida }} tok{% endif %}</b><br>{{ m.contenido }}
       </div>
       {% endfor %}
     </div>
@@ -107,7 +123,7 @@
         <tr>
           <td><a href="/panel?id={{ r.id }}">{{ r.creada_en.strftime('%m-%d %H:%M') if r.creada_en else '' }}</a></td>
           <td>{{ r.ciudad or '—' }}</td>
-          <td>{{ r.resumen or '—' }}{% if r.requiere_revision %} <span class="tag" style="color:var(--danger);border-color:var(--danger)">revisar</span>{% endif %}</td>
+          <td>{{ r.resumen or '—' }}{% if r.requiere_revision %} <span class="tag" style="color:var(--peligro);border-color:var(--peligro)">revisar</span>{% endif %}</td>
           <td>{{ r.utm_campaign or '—' }}</td>
           <td><span class="tag">{{ r.estado_lead }}</span></td>
           <td>{{ '%.2f'|format(r.nivel_confianza) if r.nivel_confianza is not none else '—' }}</td>
