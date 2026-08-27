@@ -210,6 +210,29 @@ async def guardar_calificacion(cid: str, declarado: dict, derivado: dict,
             cid, json.dumps(ficha, ensure_ascii=False))
 
 
+async def get_informe(cid: str) -> dict:
+    """Informe del visitante (4 bloques) desde ficha.informe_visitante. El bloque
+    1 cae al resumen aprobado si la IA no lo repitió."""
+    assert _pool is not None
+    if demo_mode():
+        return {}
+    row = await _pool.fetchrow(
+        "SELECT resumen_usuario, ficha->'informe_visitante' inf "
+        "FROM consultas.consulta WHERE id=$1::uuid", cid)
+    if not row:
+        return {}
+    inf = row["inf"]
+    if isinstance(inf, str):
+        try:
+            inf = json.loads(inf)
+        except Exception:
+            inf = {}
+    inf = inf or {}
+    if not (inf.get("lo_que_entendimos") or "").strip():
+        inf["lo_que_entendimos"] = row["resumen_usuario"] or ""
+    return inf
+
+
 async def guardar_contacto(cid: str, d: dict) -> None:
     assert _pool is not None
     await _pool.execute(

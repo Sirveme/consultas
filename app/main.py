@@ -109,6 +109,15 @@ async def _cuerpo_sin_ia(cid, motivo):
             "whatsapp": _wa_url()}
 
 
+async def _cierre(cid: str, data: dict) -> None:
+    """Al cerrar (resumen listo): evento resumen_visto y, si la IA generó el
+    informe con contenido, informe_generado."""
+    await db.add_evento(cid, "resumen_visto", {})
+    inf = (data or {}).get("informe_visitante") or {}
+    if (inf.get("lo_que_entendimos") or "").strip() or (inf.get("preguntas") or []):
+        await db.add_evento(cid, "informe_generado", {})
+
+
 # --- Landing ----------------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
 async def landing(request: Request):
@@ -151,7 +160,7 @@ async def api_iniciar(payload: dict, request: Request):
     await db.registrar_turno_ia(cid, res["data"], res["tokens_entrada"], res["tokens_salida"], res["modelo"])
     resp = JSONResponse(_turno_resp(cid, res["data"]))
     if res["data"].get("informacion_suficiente"):
-        await db.add_evento(cid, "resumen_visto", {})
+        await _cierre(cid, res["data"])
     _set_sesion(resp, request, {"utm": ses.get("utm") or {}, "cid": cid})
     return resp
 
@@ -159,8 +168,9 @@ async def api_iniciar(payload: dict, request: Request):
 def _turno_resp(cid, data) -> dict:
     """Da forma a la respuesta del cliente según si toca pregunta o resumen."""
     if data.get("informacion_suficiente"):
-        return {"ok": True, "fase": "resumen", "resumen": data.get("resumen_usuario") or "",
-                "ficha": data.get("ficha") or {}}
+        # No se envía la ficha al cliente: contiene datos internos (producto_sugerido,
+        # calificación). El informe del visitante se entrega recién en /api/contacto.
+        return {"ok": True, "fase": "resumen", "resumen": data.get("resumen_usuario") or ""}
     return {"ok": True, "fase": "pregunta", "mensaje": data.get("respuesta_visible") or "",
             "pregunta": data.get("siguiente_pregunta") or "",
             "chips": data.get("chips_sugeridos") or []}
@@ -194,7 +204,7 @@ async def api_responder(payload: dict, request: Request):
         data["informacion_suficiente"] = True
     await db.registrar_turno_ia(cid, data, res["tokens_entrada"], res["tokens_salida"], res["modelo"])
     if data.get("informacion_suficiente"):
-        await db.add_evento(cid, "resumen_visto", {})
+        await _cierre(cid, data)
     return JSONResponse(_turno_resp(cid, data))
 
 
@@ -225,7 +235,7 @@ async def api_corregir(payload: dict, request: Request):
     data = res["data"]
     data["informacion_suficiente"] = True   # tras corregir, cerramos con resumen
     await db.registrar_turno_ia(cid, data, res["tokens_entrada"], res["tokens_salida"], res["modelo"])
-    await db.add_evento(cid, "resumen_visto", {})
+    await _cierre(cid, data)
     resp = JSONResponse(_turno_resp(cid, data))
     _set_sesion(resp, request, {**ses, "corregido": True})
     return resp
@@ -249,8 +259,9 @@ async def api_contacto(payload: dict, request: Request):
         "consulta_publicable": payload.get("consulta_publicable"),
         "version_publica": payload.get("version_publica")})
     await db.add_evento(cid, "contacto_enviado", {})
+    informe = await db.get_informe(cid)   # el entregable que se muestra en la pantalla final
     return JSONResponse({"ok": True, "mensaje": "¡Gracias! Te contactaremos pronto.",
-                         "whatsapp": _wa_url()})
+                         "whatsapp": _wa_url(), "informe": informe})
 
 
 @app.post("/api/regenerar-resumen")
@@ -272,7 +283,7 @@ async def api_regenerar_resumen(payload: dict, request: Request):
     data["informacion_suficiente"] = True
     await db.registrar_turno_ia(cid, data, res["tokens_entrada"], res["tokens_salida"], res["modelo"])
     if (data.get("resumen_usuario") or "").strip():
-        await db.add_evento(cid, "resumen_visto", {})
+        await _cierre(cid, data)
     return JSONResponse(_turno_resp(cid, data))
 
 
@@ -336,7 +347,7 @@ async def api_evento(payload: dict, request: Request):
     # Del cliente solo se aceptan eventos que el servidor NO puede observar por su
     # cuenta: el click de WhatsApp y el momento en que se muestra la calificación.
     tipo = (payload.get("tipo") or "").strip()[:40]
-    if tipo not in ("whatsapp_click", "calificacion_mostrada"):
+    if tipo not in ("whatsapp_click", "calificacion_mostrada", "informe_descargado"):
         return JSONResponse({"ok": True})   # el resto del embudo se registra en el backend
     ses = _leer_sesion(request)
     await db.add_evento(ses.get("cid"), tipo, {"lugar": payload.get("lugar")})

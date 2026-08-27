@@ -45,6 +45,23 @@ REGLAS:
 14. Cuando la persona corrija el resumen, REGENERA el resumen_usuario COMPLETO
     incorporando su aclaración. Nunca devuelvas un resumen vacío ni parcial:
     resumen_usuario siempre debe tener el resumen final legible para la persona.
+15. respuesta_visible NUNCA debe contener la pregunta. Es solo tu reconocimiento
+    breve de lo que la persona te contó (una o dos frases). La pregunta va
+    únicamente en siguiente_pregunta. Si repites la pregunta en ambos campos, la
+    persona la verá dos veces.
+
+INFORME PARA LA PERSONA (informe_visitante):
+Al CERRAR (informacion_suficiente=true) genera informe_visitante con cuatro
+bloques: lo_que_entendimos (el resumen ya aprobado), preguntas (4 a 6 concretas y
+específicas de su caso, no genéricas, que cualquier proveedor le hará),
+minimo_para_implementar (3 a 5 condiciones reales: equipos, conectividad, quién se
+haría cargo, datos que ordenar) y falta_definir (lo que quedó en "desconocido" o
+sin precisar). En los turnos que NO cierran, deja esos campos vacíos ("" y []).
+El informe debe ser útil incluso si la persona nunca trabaja con nosotros. No
+prometas plazos, precios ni funcionalidades. No menciones productos nuestros.
+Escribe en segunda persona, claro y sin tecnicismos. Si un punto no lo puedes
+sostener con lo que la persona te contó, no lo inventes: inclúyelo en
+"lo que todavía falta definir".
 
 CALIFICACIÓN (SOLO INFERENCIA, NUNCA PREGUNTAS):
 No agregues preguntas técnicas a la conversación (sigue el máximo de 2 preguntas
@@ -74,6 +91,8 @@ Devuelve SIEMPRE un JSON válido con esta forma exacta (sin texto fuera del JSON
   plataforma_probable, conectividad, capacidad_tecnica, sistema_actual, urgencia.
   Además sistema_actual_detalle: texto libre con lo que describió del sistema que
   usa hoy (o null). Y confianza_calificacion (0.0 a 1.0).
+  Y informe_visitante: el informe de 4 bloques (lo_que_entendimos, preguntas[],
+  minimo_para_implementar[], falta_definir[]); se llena solo al cerrar.
 - resumen_usuario: resumen claro para la persona (se muestra cuando cierras).
 - resumen_interno: resumen técnico para el equipo de ventas.
 - nivel_confianza: 0.0 a 1.0.
@@ -134,6 +153,19 @@ ESQUEMA_SALIDA = {
                     "urgencia": {"type": "string",
                                  "enum": ["alta", "media", "baja", "desconocido"]},
                     "confianza_calificacion": {"type": "number"},
+                    # Informe que se lleva la persona (se llena al cerrar; vacío antes).
+                    "informe_visitante": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "properties": {
+                            "lo_que_entendimos": {"type": "string"},
+                            "preguntas": {"type": "array", "items": {"type": "string"}},
+                            "minimo_para_implementar": {"type": "array", "items": {"type": "string"}},
+                            "falta_definir": {"type": "array", "items": {"type": "string"}},
+                        },
+                        "required": ["lo_que_entendimos", "preguntas",
+                                     "minimo_para_implementar", "falta_definir"],
+                    },
                 },
                 "required": [
                     "rubro", "problema", "usuarios", "datos_a_controlar",
@@ -141,6 +173,7 @@ ESQUEMA_SALIDA = {
                     "sector", "tipo_proyecto", "alcance", "plataforma_probable",
                     "conectividad", "capacidad_tecnica", "sistema_actual",
                     "sistema_actual_detalle", "urgencia", "confianza_calificacion",
+                    "informe_visitante",
                 ],
             },
             "resumen_usuario": {"type": "string"},
