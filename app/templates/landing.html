@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1512">
+  <title>¿Qué necesitas resolver? · Perú Sistemas PRO</title>
+  <meta name="description" content="Cuéntanos tu necesidad con tus propias palabras. Te ayudamos a explicarla y te contactamos.">
+  <link rel="stylesheet" href="/static/estilos.css">
+  {% if meta_pixel_id %}
+  <script>
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+    document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init','{{ meta_pixel_id }}'); fbq('track','PageView');
+  </script>
+  {% endif %}
+</head>
+<body data-wa="{{ whatsapp }}">
+  <main class="wrap">
+    <header class="brand"><span class="mark">◈</span> Perú Sistemas <b>PRO</b></header>
+
+    <!-- Pantalla 1 -->
+    <section id="s1" class="pantalla">
+      <h1>¿QUÉ NECESITAS RESOLVER?</h1>
+      <p class="sub">Cuéntanos con tus propias palabras. No necesitas saber de tecnología.</p>
+      <textarea id="txt" maxlength="1500" rows="5"
+        placeholder="Ejemplo: Tengo una bodega y quiero controlar mi stock y saber qué se vende más, hoy lo anoto en un cuaderno…"></textarea>
+      <button class="btn" id="b-continuar">CONTINUAR →</button>
+      <p class="mini">La IA te hará un par de preguntas para entenderte mejor.</p>
+      <p class="wa-linea">¿Prefieres escribirnos directo?
+        <a class="wa-link" data-wa-click="p1" href="{{ whatsapp }}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>.</p>
+    </section>
+
+    <!-- Pantalla 2 -->
+    <section id="s2" class="pantalla oculto">
+      <div id="conv"></div>
+      <div id="chips" class="chips"></div>
+      <textarea id="txt2" maxlength="1500" rows="3" placeholder="Escribe tu respuesta…"></textarea>
+      <button class="btn" id="b-responder">Enviar</button>
+      <p class="wa-linea"><a class="wa-link" data-wa-click="p2" href="{{ whatsapp }}" target="_blank" rel="noopener">Prefiero WhatsApp</a></p>
+    </section>
+
+    <!-- Pantalla 3: resumen -->
+    <section id="s3" class="pantalla oculto">
+      <h2>ESTO ES LO QUE ENTENDIMOS</h2>
+      <div id="resumen" class="resumen"></div>
+      <div class="row-btns">
+        <button class="btn" id="b-ok">Sí, está bien</button>
+        <button class="btn sec" id="b-corregir">Quiero corregir algo</button>
+      </div>
+      <div id="corregir-box" class="oculto">
+        <textarea id="txt3" maxlength="1500" rows="3" placeholder="Cuéntanos qué ajustar…"></textarea>
+        <button class="btn" id="b-enviar-correccion">Actualizar resumen</button>
+      </div>
+    </section>
+
+    <!-- Pantalla 4: contacto -->
+    <section id="s4" class="pantalla oculto">
+      <h2>¿A DÓNDE TE CONTACTAMOS?</h2>
+      <p id="s4-msg" class="sub"></p>
+      <label>Nombre* <input id="c-nombre" type="text" autocomplete="name"></label>
+      <label>Empresa <input id="c-empresa" type="text"></label>
+      <label>Cargo <input id="c-cargo" type="text"></label>
+      <label>Celular / WhatsApp* <input id="c-celular" type="tel" inputmode="numeric" autocomplete="tel"></label>
+      <label>Correo <input id="c-correo" type="email" autocomplete="email"></label>
+      <label>Ciudad* <input id="c-ciudad" type="text"></label>
+      <div class="hp"><input id="c-hp" type="text" tabindex="-1" autocomplete="off"></div>
+      <label class="chk"><input type="checkbox" id="c-priv"> Mi consulta es privada</label>
+      <label class="chk"><input type="checkbox" id="c-pub"> Autorizo mostrar una versión resumida y anónima de mi consulta</label>
+      <button class="btn" id="b-contacto">Enviar</button>
+      <div class="msg" id="c-msg" role="status" aria-live="polite"></div>
+    </section>
+
+    <!-- Gracias -->
+    <section id="sg" class="pantalla oculto">
+      <h2>¡Gracias! 🎉</h2>
+      <p class="sub" id="sg-msg">Registramos tu consulta. Te contactaremos pronto.</p>
+      <a class="btn wa" data-wa-click="gracias" href="{{ whatsapp }}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>
+    </section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#0b1512">
+  <title>Panel · Consultas</title>
+  <link rel="stylesheet" href="/static/estilos.css">
+</head>
+<body>
+{% if not authed %}
+  <div class="login-box">
+    <h2>Panel de consultas</h2>
+    {% if error %}<p class="msg err">Contraseña incorrecta.</p>{% endif %}
+    <form method="post" action="/panel/login">
+      <label>Contraseña <input type="password" name="password" autofocus></label>
+      <button class="btn" type="submit">Entrar</button>
+    </form>
+  </div>
+
+{% elif detalle %}
+  {% set c = detalle.c %}
+  <div class="panel-wrap">
+    <p><a href="/panel">← Volver a la lista</a></p>
+    <h2>Consulta · {{ c.ciudad or 'sin ciudad' }}
+      <span class="tag">{{ c.fase }}</span> <span class="tag">{{ c.estado_lead }}</span></h2>
+    <p class="kv"><b>Creada:</b> {{ c.creada_en.strftime('%Y-%m-%d %H:%M') if c.creada_en else '' }} ·
+      <b>Confianza:</b> {{ '%.2f'|format(c.nivel_confianza) if c.nivel_confianza is not none else '—' }} ·
+      <b>Revisión:</b> {{ 'sí' if c.requiere_revision else 'no' }} ·
+      <b>Producto:</b> {{ c.producto or 'a medida' }}</p>
+
+    <h3>Contacto</h3>
+    <p class="kv"><b>Nombre:</b> {{ c.nombre or '—' }} · <b>Empresa:</b> {{ c.empresa or '—' }} ·
+      <b>Cargo:</b> {{ c.cargo or '—' }}<br>
+      <b>Celular:</b> {{ c.celular or '—' }} · <b>Correo:</b> {{ c.correo or '—' }}</p>
+
+    <h3>Cambiar estado</h3>
+    <form method="post" action="/panel/estado" style="display:flex;gap:8px;align-items:center">
+      <input type="hidden" name="id" value="{{ c.id }}">
+      <select name="estado">
+        {% for e in estados %}<option value="{{ e }}" {{ 'selected' if e==c.estado_lead else '' }}>{{ e }}</option>{% endfor %}
+      </select>
+      <button class="btn" style="width:auto;margin:0" type="submit">Guardar</button>
+    </form>
+
+    <h3>Conversación</h3>
+    <div class="conv-det" style="display:flex;flex-direction:column;gap:8px">
+      {% for m in detalle.mensajes %}
+      <div class="burbuja {{ 'usuario' if m.rol=='usuario' else 'ia' }}">
+        <b style="font-size:11px;color:var(--muted)">{{ m.rol }}{% if m.tokens_salida %} · {{ m.tokens_entrada }}/{{ m.tokens_salida }} tok{% endif %}</b><br>{{ m.contenido }}
+      </div>
+      {% endfor %}
+    </div>
+
+    <h3>Resumen interno</h3>
+    <div class="resumen">{{ c.resumen_interno or '—' }}</div>
+
+    <h3>Ficha estructurada</h3>
+    <pre class="kv" style="white-space:pre-wrap">{{ c.ficha }}</pre>
+
+    <h3>Origen / tokens</h3>
+    <p class="kv"><b>Campaña:</b> {{ c.utm_campaign or '—' }} · <b>Source:</b> {{ c.utm_source or '—' }} ·
+      <b>Medium:</b> {{ c.utm_medium or '—' }} · <b>Content:</b> {{ c.utm_content or '—' }}<br>
+      <b>Tokens totales:</b> {{ c.tokens_entrada }}/{{ c.tokens_salida }} · <b>Llamadas IA:</b> {{ c.llamadas_ia }}</p>
+  </div>
+
+{% else %}
+  <div class="panel-wrap">
+    <h2>Consultas <span class="tag">{{ filas|length }}</span></h2>
+    <form method="get" action="/panel" class="filtros">
+      <input type="text" name="fase" value="{{ f_fase }}" placeholder="fase">
+      <input type="text" name="campana" value="{{ f_campana }}" placeholder="utm_campaign">
+      <select name="estado">
+        <option value="">— estado —</option>
+        {% for e in estados %}<option value="{{ e }}" {{ 'selected' if e==f_estado else '' }}>{{ e }}</option>{% endfor %}
+      </select>
+      <button class="btn" style="width:auto;margin:0" type="submit">Filtrar</button>
+    </form>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th>Fecha</th><th>Ciudad</th><th>Resumen</th><th>Campaña</th><th>Estado</th><th>Conf.</th></tr></thead>
+      <tbody>
+        {% for r in filas %}
+        <tr>
+          <td><a href="/panel?id={{ r.id }}">{{ r.creada_en.strftime('%m-%d %H:%M') if r.creada_en else '' }}</a></td>
+          <td>{{ r.ciudad or '—' }}</td>
+          <td>{{ r.resumen or '—' }}{% if r.requiere_revision %} <span class="tag" style="color:var(--danger);border-color:var(--danger)">revisar</span>{% endif %}</td>
+          <td>{{ r.utm_campaign or '—' }}</td>
+          <td><span class="tag">{{ r.estado_lead }}</span></td>
+          <td>{{ '%.2f'|format(r.nivel_confianza) if r.nivel_confianza is not none else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+{% endif %}
+</body>
+</html>

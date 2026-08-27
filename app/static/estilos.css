@@ -1,0 +1,67 @@
+/* estilos.css — consultas.perusistemas.pro. Tema oscuro, mobile-first, sin #ffffff. */
+:root{
+  --bg:#0b1512; --bg2:#0e1c17; --surface:#12241d; --surface2:#16302569;
+  --line:#1f3a2e; --green:#22c55e; --green-d:#16a34a; --text:#e6f0ea;
+  --muted:#8fb3a3; --danger:#f87171; --radius:16px;
+}
+*{ box-sizing:border-box; } html,body{ margin:0; }
+body{ background:var(--bg); color:var(--text); font:16px/1.5 system-ui,-apple-system,
+  "Segoe UI",Roboto,Arial,sans-serif; -webkit-text-size-adjust:100%; }
+.wrap{ max-width:620px; margin:0 auto; padding:16px 16px 48px; }
+a{ color:var(--green); }
+.brand{ font-size:14px; color:var(--muted); margin:4px 0 18px; letter-spacing:.3px; }
+.brand .mark{ color:var(--green); } .brand b{ color:var(--text); }
+h1{ font-size:23px; line-height:1.2; margin:8px 0 6px; }
+h2{ font-size:19px; margin:6px 0 10px; }
+.sub{ color:var(--muted); margin:0 0 16px; }
+.mini{ font-size:12.5px; color:var(--muted); margin:8px 0 0; }
+.pantalla{ animation:aparece .2s ease; }
+@keyframes aparece{ from{ opacity:0; transform:translateY(6px);} to{ opacity:1; transform:none; } }
+.oculto{ display:none; }
+
+textarea,input[type=text],input[type=email],input[type=tel]{
+  width:100%; font:inherit; padding:13px; border-radius:12px; border:1px solid var(--line);
+  background:#0d1a15; color:var(--text); }
+textarea:focus,input:focus{ outline:none; border-color:var(--green); }
+label{ display:block; font-size:13px; color:var(--muted); margin:10px 0 0; }
+label input{ margin-top:5px; }
+.chk{ display:flex; gap:9px; align-items:flex-start; font-size:13.5px; color:var(--text); margin-top:12px; }
+.chk input{ margin-top:3px; width:18px; height:18px; accent-color:var(--green); }
+.hp{ position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+
+.btn{ width:100%; font:inherit; font-weight:700; padding:14px 16px; border:none; border-radius:12px;
+  background:var(--green); color:#062018; cursor:pointer; margin-top:12px; text-align:center;
+  text-decoration:none; display:block; }
+.btn:disabled{ opacity:.6; } .btn.sec{ background:transparent; color:var(--green); border:1px solid var(--green-d); }
+.btn.wa{ background:#25d366; color:#05240f; }
+.row-btns{ display:grid; gap:10px; grid-template-columns:1fr 1fr; }
+@media(max-width:460px){ .row-btns{ grid-template-columns:1fr; } }
+
+.wa-linea{ font-size:13px; color:var(--muted); margin:14px 0 0; text-align:center; }
+.wa-link{ font-weight:600; }
+
+/* Conversación */
+#conv{ display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
+.burbuja{ padding:12px 14px; border-radius:14px; font-size:15px; }
+.burbuja.ia{ background:var(--surface); border:1px solid var(--line); }
+.chips{ display:flex; flex-wrap:wrap; gap:8px; margin:0 0 12px; }
+.chip{ font:inherit; font-size:13px; padding:8px 12px; border-radius:99px; cursor:pointer;
+  background:var(--surface2); color:var(--text); border:1px solid var(--line); }
+.chip:hover{ border-color:var(--green); }
+.resumen{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px;
+  white-space:pre-line; font-size:15px; }
+.msg{ font-size:13.5px; margin-top:10px; min-height:1.1em; }
+.msg.err{ color:var(--danger); } .msg.ok{ color:var(--green); font-weight:600; }
+
+/* Panel */
+.panel-wrap{ max-width:1000px; margin:0 auto; padding:16px; }
+.filtros{ display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
+.filtros input,.filtros select{ width:auto; }
+table{ width:100%; border-collapse:collapse; font-size:13px; }
+th,td{ text-align:left; padding:8px 9px; border-bottom:1px solid var(--line); vertical-align:top; }
+th{ color:var(--muted); text-transform:uppercase; font-size:11px; letter-spacing:.4px; }
+.tag{ font-size:11px; padding:1px 8px; border-radius:99px; border:1px solid var(--line); color:var(--muted); }
+.login-box{ max-width:340px; margin:60px auto; background:var(--surface); border:1px solid var(--line);
+  border-radius:16px; padding:22px; }
+.conv-det .burbuja.usuario{ background:#10251b; border:1px dashed var(--line); }
+.kv{ font-size:13px; color:var(--muted); } .kv b{ color:var(--text); }
