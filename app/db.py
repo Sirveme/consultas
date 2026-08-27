@@ -171,8 +171,6 @@ async def guardar_calificacion(cid: str, declarado: dict, derivado: dict,
       - nota: matiz en texto libre -> se acumula en nota_calificacion.
     Lo que ningún chip toca conserva el valor inferido por la IA."""
     assert _pool is not None
-    if demo_mode():
-        return
     if not declarado and not derivado and not nota:
         # Saltó la pantalla: no se toca la ficha, solo se avanza de fase.
         await _pool.execute(
@@ -214,8 +212,6 @@ async def get_informe(cid: str) -> dict:
     """Informe del visitante (4 bloques) desde ficha.informe_visitante. El bloque
     1 cae al resumen aprobado si la IA no lo repitió."""
     assert _pool is not None
-    if demo_mode():
-        return {}
     row = await _pool.fetchrow(
         "SELECT resumen_usuario, ficha->'informe_visitante' inf "
         "FROM consultas.consulta WHERE id=$1::uuid", cid)
