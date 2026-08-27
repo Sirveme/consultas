@@ -161,6 +161,55 @@ async def marcar_fase(cid: str, fase: str) -> None:
         "UPDATE consultas.consulta SET fase=$2, actualizada_en=now() WHERE id=$1::uuid", cid, fase)
 
 
+async def guardar_calificacion(cid: str, declarado: dict, derivado: dict,
+                               nota: str = "") -> None:
+    """Aplica la pantalla de datos técnicos a la ficha con esta regla:
+      - declarado: lo que el chip responde DIRECTAMENTE -> sobrescribe y entra a
+        campos_declarados (se marca como 'declarado' en el panel).
+      - derivado: deducción nuestra -> se aplica SOLO si el campo no tiene dato real
+        (ausente/vacío/'desconocido'); NUNCA entra a campos_declarados.
+      - nota: matiz en texto libre -> se acumula en nota_calificacion.
+    Lo que ningún chip toca conserva el valor inferido por la IA."""
+    assert _pool is not None
+    if demo_mode():
+        return
+    if not declarado and not derivado and not nota:
+        # Saltó la pantalla: no se toca la ficha, solo se avanza de fase.
+        await _pool.execute(
+            "UPDATE consultas.consulta SET fase='contacto', actualizada_en=now() WHERE id=$1::uuid", cid)
+        return
+    async with _pool.acquire() as con:
+        row = await con.fetchrow("SELECT ficha FROM consultas.consulta WHERE id=$1::uuid", cid)
+        if not row:
+            return
+        ficha = row["ficha"]
+        if isinstance(ficha, str):
+            try:
+                ficha = json.loads(ficha)
+            except Exception:
+                ficha = {}
+        ficha = ficha or {}
+
+        for k, v in (declarado or {}).items():          # (a) declarado: sobrescribe
+            ficha[k] = v
+        for k, v in (derivado or {}).items():            # (b) derivado: solo si no hay dato real
+            if k in (declarado or {}):
+                continue
+            if ficha.get(k) in (None, "", "desconocido"):
+                ficha[k] = v
+        if nota:                                         # (c) nota libre acumulada
+            prev = (ficha.get("nota_calificacion") or "").strip()
+            ficha["nota_calificacion"] = (prev + "; " + nota) if prev else nota
+        # (d) campos_declarados: SOLO los declarados directamente (nunca los derivados)
+        prev_decl = ficha.get("campos_declarados") or []
+        ficha["campos_declarados"] = sorted(set(list(prev_decl) + list((declarado or {}).keys())))
+
+        await con.execute(
+            "UPDATE consultas.consulta SET ficha=$2::jsonb, fase='contacto', "
+            "actualizada_en=now() WHERE id=$1::uuid",
+            cid, json.dumps(ficha, ensure_ascii=False))
+
+
 async def guardar_contacto(cid: str, d: dict) -> None:
     assert _pool is not None
     await _pool.execute(
@@ -203,18 +252,24 @@ async def add_evento(cid: Optional[str], tipo: str, metadata: Optional[dict] = N
 
 # --- Panel ------------------------------------------------------------------
 async def panel_listar(fase: str = "", campaign: str = "", estado: str = "",
-                       limite: int = 200) -> list[dict]:
+                       sector: str = "", tipo_proyecto: str = "", limite: int = 200) -> list[dict]:
     assert _pool is not None
     cond, args = ["1=1"], []
     for col, val in (("fase", fase), ("utm_campaign", campaign), ("estado_lead", estado)):
         if val:
             args.append(val)
             cond.append(f"{col}=${len(args)}")
+    # Filtros de calificación (viven dentro de ficha jsonb):
+    for key, val in (("sector", sector), ("tipo_proyecto", tipo_proyecto)):
+        if val:
+            args.append(val)
+            cond.append(f"ficha->>'{key}' = ${len(args)}")
     args.append(limite)
     rows = await _pool.fetch(
         f"""
         SELECT id, creada_en, ciudad, utm_campaign, estado_lead, fase, nivel_confianza,
-               requiere_revision, producto, left(coalesce(resumen_interno, texto_original,''),140) resumen
+               requiere_revision, producto, ficha->>'sector' sector, ficha->>'tipo_proyecto' tipo_proyecto,
+               left(coalesce(resumen_interno, texto_original,''),140) resumen
         FROM consultas.consulta WHERE {' AND '.join(cond)}
         ORDER BY creada_en DESC LIMIT ${len(args)}
         """, *args)
@@ -226,6 +281,13 @@ async def panel_detalle(cid: str) -> Optional[dict]:
     c = await _pool.fetchrow("SELECT * FROM consultas.consulta WHERE id=$1::uuid", cid)
     if not c:
         return None
+    c = dict(c)
+    if isinstance(c.get("ficha"), str):   # asyncpg devuelve jsonb como texto
+        try:
+            c["ficha"] = json.loads(c["ficha"])
+        except Exception:
+            c["ficha"] = {}
+    c["ficha"] = c.get("ficha") or {}
     msgs = await _pool.fetch(
         "SELECT rol, contenido, modelo, tokens_entrada, tokens_salida, creado_en "
         "FROM consultas.mensaje WHERE consulta_id=$1::uuid ORDER BY id", cid)

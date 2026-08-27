@@ -11,7 +11,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from itsdangerous import URLSafeSerializer, BadSignature
@@ -253,14 +253,93 @@ async def api_contacto(payload: dict, request: Request):
                          "whatsapp": _wa_url()})
 
 
+@app.post("/api/regenerar-resumen")
+async def api_regenerar_resumen(payload: dict, request: Request):
+    """Reintento cuando el resumen llegó vacío: re-genera SOLO el resumen sobre la
+    conversación existente (sin agregar un turno del usuario). Cuenta como llamada
+    a la IA (tope de 6/consulta)."""
+    ses = _leer_sesion(request)
+    cid = ses.get("cid")
+    if not cid:
+        return JSONResponse({"ok": False, "error": "sesión expirada"}, status_code=400)
+    if await db.llamadas_ia_de(cid) >= db.MAX_LLAMADAS_IA or not await db.ia_diaria_ok():
+        return JSONResponse(await _cuerpo_sin_ia(cid, "tope"))
+    res = await ia.consultar(await db.turnos_de(cid))
+    if not res["ok"]:
+        await db.add_evento(cid, "ia_error", {"error": res.get("error"), "detalle": res.get("detalle")})
+        return JSONResponse(await _cuerpo_sin_ia(cid, "ia_error"))
+    data = res["data"]
+    data["informacion_suficiente"] = True
+    await db.registrar_turno_ia(cid, data, res["tokens_entrada"], res["tokens_salida"], res["modelo"])
+    if (data.get("resumen_usuario") or "").strip():
+        await db.add_evento(cid, "resumen_visto", {})
+    return JSONResponse(_turno_resp(cid, data))
+
+
+# Valores válidos declarables en la pantalla de datos técnicos (deben calzar con
+# los enums del esquema de la ficha).
+_CALIF_VALIDOS = {
+    "sector": {"privado", "publico", "colegio_profesional", "ong"},
+    "tipo_proyecto": {"crear_nuevo", "actualizar_existente", "integrar"},
+    "alcance": {"una_tarea", "un_proceso", "area_completa", "organizacion"},
+    "plataforma_probable": {"web", "appweb", "android", "escritorio"},
+    "conectividad": {"buena", "limitada", "sin_internet"},
+    "capacidad_tecnica": {"tiene_personal_sistemas", "usuario_basico"},
+    "sistema_actual": {"ninguno", "excel", "software_comprado", "a_medida"},
+    "urgencia": {"alta", "media", "baja"},
+}
+# Para valores DERIVADOS también se admite "desconocido" (p. ej. sistema_actual).
+_CALIF_CON_DESCONOCIDO = {k: (v | {"desconocido"}) for k, v in _CALIF_VALIDOS.items()}
+
+# Campos de calificación a mostrar en el panel (orden + etiqueta legible).
+# sistema_actual_detalle es texto libre (no declarable por la pantalla de chips).
+CALIF_CAMPOS = [
+    ("sector", "Sector"), ("tipo_proyecto", "Tipo de proyecto"), ("alcance", "Alcance"),
+    ("plataforma_probable", "Plataforma probable"), ("conectividad", "Conectividad"),
+    ("capacidad_tecnica", "Capacidad técnica"), ("sistema_actual", "Sistema actual"),
+    ("sistema_actual_detalle", "Sistema actual (detalle)"), ("urgencia", "Urgencia"),
+]
+
+
+@app.post("/api/calificacion")
+async def api_calificacion(payload: dict, request: Request):
+    """Pantalla opcional de datos técnicos. Lo que declara la persona SOBRESCRIBE
+    lo inferido (confianza 1.0). Si la salta, no se toca la ficha."""
+    ses = _leer_sesion(request)
+    cid = ses.get("cid")
+    if not cid:
+        return JSONResponse({"ok": False, "error": "sesión expirada"}, status_code=400)
+    salto = bool(payload.get("salto"))
+    declarado, derivado, nota = {}, {}, ""
+    if not salto:
+        din = payload.get("declarado") or {}
+        dde = payload.get("derivado") or {}
+        # Declarado: solo valores reales del enum (sin "desconocido").
+        for campo, validos in _CALIF_VALIDOS.items():
+            v = str(din.get(campo) or "").strip()
+            if v in validos:
+                declarado[campo] = v
+        # Derivado: admite "desconocido"; nunca pisa un campo ya declarado.
+        for campo, validos in _CALIF_CON_DESCONOCIDO.items():
+            v = str(dde.get(campo) or "").strip()
+            if v in validos and campo not in declarado:
+                derivado[campo] = v
+        nota = str(payload.get("nota") or "").strip()[:500]
+    await db.guardar_calificacion(cid, declarado, derivado, nota)
+    await db.add_evento(cid, "calificacion_completada",
+                        {"salto": salto, "n_declarados": len(declarado)})
+    return JSONResponse({"ok": True})
+
+
 @app.post("/api/evento")
 async def api_evento(payload: dict, request: Request):
-    # Solo whatsapp_click viene del cliente (el servidor no puede verlo).
+    # Del cliente solo se aceptan eventos que el servidor NO puede observar por su
+    # cuenta: el click de WhatsApp y el momento en que se muestra la calificación.
     tipo = (payload.get("tipo") or "").strip()[:40]
-    if tipo != "whatsapp_click":
-        return JSONResponse({"ok": True})   # el resto se registra en el backend
+    if tipo not in ("whatsapp_click", "calificacion_mostrada"):
+        return JSONResponse({"ok": True})   # el resto del embudo se registra en el backend
     ses = _leer_sesion(request)
-    await db.add_evento(ses.get("cid"), "whatsapp_click", {"lugar": payload.get("lugar")})
+    await db.add_evento(ses.get("cid"), tipo, {"lugar": payload.get("lugar")})
     return JSONResponse({"ok": True})
 
 
@@ -293,18 +372,21 @@ def _panel_ok(request: Request) -> bool:
 
 
 @app.get("/panel", response_class=HTMLResponse)
-async def panel(request: Request, id: str = "", fase: str = "", campana: str = "", estado: str = ""):
+async def panel(request: Request, id: str = "", fase: str = "", campana: str = "",
+                estado: str = "", sector: str = "", tipo_proyecto: str = ""):
     if not _panel_ok(request):
         return templates.TemplateResponse(request, "panel.html", {"request": request, "authed": False})
     if id:
         det = await db.panel_detalle(id)
         return templates.TemplateResponse(request, "panel.html",
                                           {"request": request, "authed": True, "detalle": det,
-                                           "estados": db.ESTADOS})
-    filas = await db.panel_listar(fase, campana, estado)
+                                           "estados": db.ESTADOS, "calif_campos": CALIF_CAMPOS})
+    filas = await db.panel_listar(fase, campana, estado, sector, tipo_proyecto)
     return templates.TemplateResponse(request, "panel.html", {
         "request": request, "authed": True, "filas": filas, "estados": db.ESTADOS,
-        "f_fase": fase, "f_campana": campana, "f_estado": estado})
+        "sectores": sorted(_CALIF_VALIDOS["sector"]), "tipos": sorted(_CALIF_VALIDOS["tipo_proyecto"]),
+        "f_fase": fase, "f_campana": campana, "f_estado": estado,
+        "f_sector": sector, "f_tipo": tipo_proyecto})
 
 
 @app.post("/panel/login")
@@ -334,3 +416,18 @@ async def panel_estado(request: Request):
 @app.get("/salud")
 async def salud():
     return {"ok": True}
+
+
+@app.get("/robots.txt")
+async def robots():
+    # Indexa la raíz; bloquea el panel y las APIs.
+    cuerpo = "User-agent: *\nAllow: /$\nDisallow: /panel\nDisallow: /api/\n"
+    return Response(cuerpo, media_type="text/plain")
+
+
+@app.get("/favicon.ico")
+async def favicon():
+    ruta = BASE_DIR / "static" / "favicon.ico"
+    if ruta.exists():
+        return FileResponse(ruta, media_type="image/x-icon")
+    return Response(status_code=204)

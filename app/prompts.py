@@ -39,6 +39,22 @@ REGLAS:
 12. Si el mensaje no tiene relación con necesidades de software o
     gestión, responde con amabilidad, no sigas la conversación y marca
     informacion_suficiente en true con nivel_confianza 0.
+13. Nunca inventes ni modifiques cantidades, cifras, fechas ni nombres propios.
+    Usa exactamente los números que la persona mencionó. Si no mencionó una
+    cantidad, no la supongas: deja el campo vacío en la ficha.
+14. Cuando la persona corrija el resumen, REGENERA el resumen_usuario COMPLETO
+    incorporando su aclaración. Nunca devuelvas un resumen vacío ni parcial:
+    resumen_usuario siempre debe tener el resumen final legible para la persona.
+
+CALIFICACIÓN (SOLO INFERENCIA, NUNCA PREGUNTAS):
+No agregues preguntas técnicas a la conversación (sigue el máximo de 2 preguntas
+en lenguaje cotidiano). Además de lo anterior, DEDUCE de lo que la persona contó
+los campos de calificación de la ficha (sector, tipo_proyecto, alcance,
+plataforma_probable, conectividad, capacidad_tecnica, sistema_actual, urgencia).
+Usa "desconocido" cuando no haya evidencia suficiente: está permitido y esperado
+dejarlos en "desconocido"; inventarlos es peor que no tenerlos. Agrega
+confianza_calificacion (0.0 a 1.0): si dedujiste casi todo por contexto, que sea
+baja. La persona NUNCA debe notar esta calificación.
 
 TONO:
 Cercano, claro, profesional y peruano. Puedes decir "cuéntame",
@@ -51,9 +67,13 @@ Devuelve SIEMPRE un JSON válido con esta forma exacta (sin texto fuera del JSON
 - siguiente_pregunta: la pregunta (o "" si ya pasas al resumen).
 - chips_sugeridos: 3 a 5 respuestas rápidas sugeridas (o [] si no aplica).
 - informacion_suficiente: true cuando ya puedes cerrar con un resumen.
-- ficha: datos estructurados del problema (rubro, problema, usuarios, datos a
-  controlar, resultado esperado, sistema_actual, producto_sugerido). El campo
-  producto_sugerido es SOLO para uso interno; NUNCA lo menciones a la persona.
+- ficha: datos estructurados. Descriptivos (texto o null si no hay dato): rubro,
+  problema, usuarios, datos_a_controlar, resultado_esperado, producto_sugerido
+  (este último SOLO interno, NUNCA lo menciones). Calificación INFERIDA (usa el
+  valor "desconocido" si no hay evidencia): sector, tipo_proyecto, alcance,
+  plataforma_probable, conectividad, capacidad_tecnica, sistema_actual, urgencia.
+  Además sistema_actual_detalle: texto libre con lo que describió del sistema que
+  usa hoy (o null). Y confianza_calificacion (0.0 a 1.0).
 - resumen_usuario: resumen claro para la persona (se muestra cuando cierras).
 - resumen_interno: resumen técnico para el equipo de ventas.
 - nivel_confianza: 0.0 a 1.0.
@@ -85,17 +105,42 @@ ESQUEMA_SALIDA = {
                 "type": "object",
                 "additionalProperties": False,
                 "properties": {
+                    # Descriptivos (texto libre o null si no hay dato).
                     "rubro": {"type": ["string", "null"]},
                     "problema": {"type": ["string", "null"]},
                     "usuarios": {"type": ["string", "null"]},
                     "datos_a_controlar": {"type": ["string", "null"]},
                     "resultado_esperado": {"type": ["string", "null"]},
-                    "sistema_actual": {"type": ["string", "null"]},
                     "producto_sugerido": {"type": ["string", "null"]},
+                    # Calificación INFERIDA (enums con "desconocido"; nunca null).
+                    "sector": {"type": "string",
+                               "enum": ["privado", "publico", "colegio_profesional", "ong", "desconocido"]},
+                    "tipo_proyecto": {"type": "string",
+                                      "enum": ["crear_nuevo", "actualizar_existente", "integrar", "desconocido"]},
+                    "alcance": {"type": "string",
+                                "enum": ["una_tarea", "un_proceso", "area_completa", "organizacion", "desconocido"]},
+                    "plataforma_probable": {"type": "string",
+                                            "enum": ["web", "appweb", "android", "escritorio", "desconocido"]},
+                    "conectividad": {"type": "string",
+                                     "enum": ["buena", "limitada", "sin_internet", "desconocido"]},
+                    "capacidad_tecnica": {"type": "string",
+                                          "enum": ["tiene_personal_sistemas", "usuario_basico", "desconocido"]},
+                    "sistema_actual": {"type": "string",
+                                       "enum": ["ninguno", "excel", "software_comprado", "a_medida", "desconocido"]},
+                    # Descripción libre de lo que usan hoy ("un programa que nos hizo
+                    # un sobrino", "el POS que vino con la caja"). Clave antes de
+                    # llamar a un lead que quiere migrar. null si no describió nada.
+                    "sistema_actual_detalle": {"type": ["string", "null"]},
+                    "urgencia": {"type": "string",
+                                 "enum": ["alta", "media", "baja", "desconocido"]},
+                    "confianza_calificacion": {"type": "number"},
                 },
                 "required": [
                     "rubro", "problema", "usuarios", "datos_a_controlar",
-                    "resultado_esperado", "sistema_actual", "producto_sugerido",
+                    "resultado_esperado", "producto_sugerido",
+                    "sector", "tipo_proyecto", "alcance", "plataforma_probable",
+                    "conectividad", "capacidad_tecnica", "sistema_actual",
+                    "sistema_actual_detalle", "urgencia", "confianza_calificacion",
                 ],
             },
             "resumen_usuario": {"type": "string"},
