@@ -70,27 +70,33 @@ ESQUEMA_SALIDA = {
     "schema": {
         "type": "object",
         "additionalProperties": False,
+        # STRICT: cada objeto lleva additionalProperties:false y required con TODAS
+        # sus propiedades. No hay opcionales: lo que puede venir vacío se declara
+        # igual en required y admite null en su tipo (p. ej. ["string","null"]).
         "properties": {
             "respuesta_visible": {"type": "string"},
+            # Vacía ("") cuando pasa directo al resumen -> string basta.
             "siguiente_pregunta": {"type": "string"},
-            "chips_sugeridos": {
-                "type": "array",
-                "items": {"type": "string"},
-                "maxItems": 5,
-            },
+            # Vacío ([]) cuando no aplica. Sin maxItems (no soportado en strict);
+            # el rango 3-5 se pide en el prompt.
+            "chips_sugeridos": {"type": "array", "items": {"type": "string"}},
             "informacion_suficiente": {"type": "boolean"},
             "ficha": {
                 "type": "object",
-                "additionalProperties": True,
+                "additionalProperties": False,
                 "properties": {
-                    "rubro": {"type": "string"},
-                    "problema": {"type": "string"},
-                    "usuarios": {"type": "string"},
-                    "datos_a_controlar": {"type": "string"},
-                    "resultado_esperado": {"type": "string"},
-                    "sistema_actual": {"type": "string"},
-                    "producto_sugerido": {"type": "string"},
+                    "rubro": {"type": ["string", "null"]},
+                    "problema": {"type": ["string", "null"]},
+                    "usuarios": {"type": ["string", "null"]},
+                    "datos_a_controlar": {"type": ["string", "null"]},
+                    "resultado_esperado": {"type": ["string", "null"]},
+                    "sistema_actual": {"type": ["string", "null"]},
+                    "producto_sugerido": {"type": ["string", "null"]},
                 },
+                "required": [
+                    "rubro", "problema", "usuarios", "datos_a_controlar",
+                    "resultado_esperado", "sistema_actual", "producto_sugerido",
+                ],
             },
             "resumen_usuario": {"type": "string"},
             "resumen_interno": {"type": "string"},
