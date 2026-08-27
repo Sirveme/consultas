@@ -35,6 +35,20 @@
       <b>Cargo:</b> {{ c.cargo or '—' }}<br>
       <b>Celular:</b> {{ c.celular or '—' }} · <b>Correo:</b> {{ c.correo or '—' }}</p>
 
+    <h3>Calificación</h3>
+    {% set declarados = (c.ficha.get('campos_declarados') or []) %}
+    {% for key, label in calif_campos %}
+    <div class="calif-item"><b>{{ label }}:</b>
+      <span class="val">{{ c.ficha.get(key) if c.ficha.get(key) not in (none, '') else '—' }}</span>
+      {% if key in declarados %}<span class="tag decl">declarado</span>{% else %}<span class="tag infer">inferido</span>{% endif %}
+    </div>
+    {% endfor %}
+    <div class="calif-item"><b>Confianza calificación:</b>
+      <span class="val">{{ c.ficha.get('confianza_calificacion') if c.ficha.get('confianza_calificacion') is not none else '—' }}</span></div>
+    {% if c.ficha.get('nota_calificacion') %}
+    <div class="calif-item"><b>Nota de calificación:</b> <span class="val">{{ c.ficha.get('nota_calificacion') }}</span></div>
+    {% endif %}
+
     <h3>Cambiar estado</h3>
     <form method="post" action="/panel/estado" style="display:flex;gap:8px;align-items:center">
       <input type="hidden" name="id" value="{{ c.id }}">
@@ -74,6 +88,14 @@
       <select name="estado">
         <option value="">— estado —</option>
         {% for e in estados %}<option value="{{ e }}" {{ 'selected' if e==f_estado else '' }}>{{ e }}</option>{% endfor %}
+      </select>
+      <select name="sector">
+        <option value="">— sector —</option>
+        {% for s in sectores %}<option value="{{ s }}" {{ 'selected' if s==f_sector else '' }}>{{ s }}</option>{% endfor %}
+      </select>
+      <select name="tipo_proyecto">
+        <option value="">— tipo —</option>
+        {% for t in tipos %}<option value="{{ t }}" {{ 'selected' if t==f_tipo else '' }}>{{ t }}</option>{% endfor %}
       </select>
       <button class="btn" style="width:auto;margin:0" type="submit">Filtrar</button>
     </form>

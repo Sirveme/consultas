@@ -7,6 +7,7 @@
   <title>¿Qué necesitas resolver? · Perú Sistemas PRO</title>
   <meta name="description" content="Cuéntanos tu necesidad con tus propias palabras. Te ayudamos a explicarla y te contactamos.">
   <link rel="stylesheet" href="/static/estilos.css">
+  <link rel="icon" href="/favicon.ico" sizes="any">
   {% if meta_pixel_id %}
   <script>
     !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -21,6 +22,14 @@
 <body data-wa="{{ whatsapp }}">
   <main class="wrap">
     <header class="brand"><span class="mark">◈</span> Perú Sistemas <b>PRO</b></header>
+
+    <!-- Indicador de carga (texto que rota; aviso de WhatsApp a los 15s) -->
+    <div id="cargando" class="cargando oculto" aria-live="polite">
+      <span class="puntos"><i></i><i></i><i></i></span>
+      <span id="cargando-txt">Leyendo lo que escribiste...</span>
+      <p id="cargando-wa" class="wa-linea oculto">Está demorando más de lo normal. Si prefieres,
+        <a class="wa-link" data-wa-click="cargando" href="{{ whatsapp }}" target="_blank" rel="noopener">escríbenos por WhatsApp</a>.</p>
+    </div>
 
     <!-- Pantalla 1 -->
     <section id="s1" class="pantalla">
@@ -54,6 +63,48 @@
       <div id="corregir-box" class="oculto">
         <textarea id="txt3" maxlength="1500" rows="3" placeholder="Cuéntanos qué ajustar…"></textarea>
         <button class="btn" id="b-enviar-correccion">Actualizar resumen</button>
+      </div>
+    </section>
+
+    <!-- Pantalla de calificación (opcional, entre resumen y contacto) -->
+    <section id="sc" class="pantalla oculto">
+      <h2>¿NOS AYUDAS CON UN PAR DE DATOS MÁS?</h2>
+      <p class="sub">Es opcional, pero nos ayuda a prepararte una mejor propuesta.</p>
+
+      <div class="grupo" data-tipo="single">
+        <p class="glabel">¿Cómo están hoy?</p>
+        <button class="opt" data-key="sist_ninguno">No usamos ningún sistema</button>
+        <button class="opt" data-key="sist_excel">Usamos Excel o cuadernos</button>
+        <button class="opt" data-key="sist_corto">Tenemos un sistema pero se nos queda corto</button>
+        <button class="opt" data-key="sist_mejorar">Tenemos un sistema y queremos mejorarlo</button>
+      </div>
+
+      <div class="grupo" data-tipo="multi" id="g-uso">
+        <p class="glabel">¿Cómo lo usarían?</p>
+        <button class="opt" data-key="uso_celular">Desde celular</button>
+        <button class="opt" data-key="uso_pc">Desde computadora</button>
+        <button class="opt" data-key="uso_varios">Desde varios locales o sedes</button>
+        <button class="opt" data-key="uso_sinint">En lugares con internet malo o sin internet</button>
+      </div>
+
+      <div class="grupo" data-tipo="single">
+        <p class="glabel">¿Tienen a alguien de sistemas?</p>
+        <button class="opt" data-key="cap_tecnico">Sí, tenemos personal técnico</button>
+        <button class="opt" data-key="cap_arregla">Alguien se las arregla</button>
+        <button class="opt" data-key="cap_ninguno">No, ninguno</button>
+      </div>
+
+      <div class="grupo" data-tipo="single">
+        <p class="glabel">¿Qué tipo de organización son?</p>
+        <button class="opt" data-key="org_privada">Empresa privada</button>
+        <button class="opt" data-key="org_publica">Institución pública</button>
+        <button class="opt" data-key="org_colegio">Colegio profesional o asociación</button>
+        <button class="opt" data-key="org_emprend">Emprendimiento personal</button>
+      </div>
+
+      <div class="row-btns">
+        <button class="btn" id="b-calif-continuar">Continuar</button>
+        <button class="btn sec" id="b-calif-saltar">Prefiero saltar esto</button>
       </div>
     </section>
 
