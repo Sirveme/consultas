@@ -17,11 +17,14 @@ Nunca lanza: si algo falla, ok=False y el llamador ofrece WhatsApp.
 from __future__ import annotations
 
 import json
+import logging
 import os
 
 import httpx
 
 from .prompts import SYSTEM_PROMPT, ESQUEMA_SALIDA
+
+log = logging.getLogger("uvicorn.error")
 
 IA_API_URL = os.getenv("IA_API_URL", "https://api.openai.com/v1/chat/completions").strip()
 IA_API_KEY = os.getenv("IA_API_KEY", "").strip()
@@ -41,7 +44,7 @@ def _mensajes_api(turnos: list[dict]) -> list[dict]:
 async def consultar(turnos: list[dict]) -> dict:
     """Un turno de la IA sobre la conversación completa (lista de turnos)."""
     base = {"ok": False, "data": None, "tokens_entrada": 0, "tokens_salida": 0,
-            "modelo": MODELO_IA, "error": None}
+            "modelo": MODELO_IA, "error": None, "detalle": None}
     if not IA_API_KEY or not MODELO_IA:
         base["error"] = "config_incompleta"   # falta IA_API_KEY o MODELO_IA
         return base
@@ -61,7 +64,12 @@ async def consultar(turnos: list[dict]) -> dict:
         return base
 
     if r.status_code != 200:
+        # Guarda y loguea el CUERPO de la respuesta (truncado) para poder
+        # diagnosticar: 'http_400' a secas no dice nada.
+        cuerpo = (r.text or "")[:500]
         base["error"] = f"http_{r.status_code}"
+        base["detalle"] = cuerpo
+        log.warning("IA %s -> %s | cuerpo: %s", MODELO_IA, base["error"], cuerpo)
         return base
 
     try:

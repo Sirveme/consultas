@@ -143,7 +143,7 @@ async def api_iniciar(payload: dict, request: Request):
 
     res = await ia.consultar([{"rol": "usuario", "contenido": texto}])
     if not res["ok"]:
-        await db.add_evento(cid, "ia_error", {"error": res.get("error")})
+        await db.add_evento(cid, "ia_error", {"error": res.get("error"), "detalle": res.get("detalle")})
         resp = JSONResponse(await _cuerpo_sin_ia(cid, "ia_error"))
         _set_sesion(resp, request, {"utm": ses.get("utm") or {}, "cid": cid})
         return resp
@@ -183,7 +183,7 @@ async def api_responder(payload: dict, request: Request):
 
     res = await ia.consultar(await db.turnos_de(cid))
     if not res["ok"]:
-        await db.add_evento(cid, "ia_error", {"error": res.get("error")})
+        await db.add_evento(cid, "ia_error", {"error": res.get("error"), "detalle": res.get("detalle")})
         return JSONResponse(await _cuerpo_sin_ia(cid, "ia_error"))
 
     data = res["data"]
@@ -218,7 +218,7 @@ async def api_corregir(payload: dict, request: Request):
         return resp
     res = await ia.consultar(await db.turnos_de(cid))
     if not res["ok"]:
-        await db.add_evento(cid, "ia_error", {"error": res.get("error")})
+        await db.add_evento(cid, "ia_error", {"error": res.get("error"), "detalle": res.get("detalle")})
         resp = JSONResponse(await _cuerpo_sin_ia(cid, "ia_error"))
         _set_sesion(resp, request, {**ses, "corregido": True})
         return resp
