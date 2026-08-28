@@ -93,6 +93,14 @@ Devuelve SIEMPRE un JSON válido con esta forma exacta (sin texto fuera del JSON
   usa hoy (o null). Y confianza_calificacion (0.0 a 1.0).
   Y informe_visitante: el informe de 4 bloques (lo_que_entendimos, preguntas[],
   minimo_para_implementar[], falta_definir[]); se llena solo al cerrar.
+  Y titular: una frase CORTA (máximo 90 caracteres) que nombre el problema, para
+  la portada del informe. No reutilices problema ni lo_que_entendimos: redáctala
+  específica y concreta (ej. "Control de inventario en tres locales").
+  Y palabras_clave: 2 a 3 palabras del problema, minúsculas, sin artículos (para
+  nombrar el archivo; ej. ["control","inventario","locales"]).
+  Y costos_aplicables: del conjunto {apis_ia, validacion_documentos, almacenamiento,
+  whatsapp}, marca SOLO los que apliquen al caso (p. ej. whatsapp si mencionó
+  WhatsApp). NO pongas números ni montos; [] si ninguno aplica.
 - resumen_usuario: resumen claro para la persona (se muestra cuando cierras).
 - resumen_interno: resumen técnico para el equipo de ventas.
 - nivel_confianza: 0.0 a 1.0.
@@ -153,6 +161,16 @@ ESQUEMA_SALIDA = {
                     "urgencia": {"type": "string",
                                  "enum": ["alta", "media", "baja", "desconocido"]},
                     "confianza_calificacion": {"type": "number"},
+                    # Frase corta (máx. 90 caracteres) que nombra el problema, para
+                    # el TITULAR de la portada del informe. No es el resumen.
+                    "titular": {"type": "string"},
+                    # 2-3 palabras clave del problema (minúsculas, sin artículos) para
+                    # nombrar el archivo PDF. Vacío [] antes de cerrar.
+                    "palabras_clave": {"type": "array", "items": {"type": "string"}},
+                    # De la lista fija de "otros costos posibles", cuáles aplican al
+                    # caso. La IA NO pone números, solo marca. Vacío [] si ninguno.
+                    "costos_aplicables": {"type": "array", "items": {"type": "string",
+                        "enum": ["apis_ia", "validacion_documentos", "almacenamiento", "whatsapp"]}},
                     # Informe que se lleva la persona (se llena al cerrar; vacío antes).
                     "informe_visitante": {
                         "type": "object",
@@ -173,7 +191,7 @@ ESQUEMA_SALIDA = {
                     "sector", "tipo_proyecto", "alcance", "plataforma_probable",
                     "conectividad", "capacidad_tecnica", "sistema_actual",
                     "sistema_actual_detalle", "urgencia", "confianza_calificacion",
-                    "informe_visitante",
+                    "titular", "palabras_clave", "costos_aplicables", "informe_visitante",
                 ],
             },
             "resumen_usuario": {"type": "string"},

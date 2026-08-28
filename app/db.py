@@ -229,6 +229,31 @@ async def get_informe(cid: str) -> dict:
     return inf
 
 
+async def datos_para_pdf(cid: str) -> Optional[dict]:
+    """Todo lo que el PDF necesita. None si el id no existe. El bloque 1 cae al
+    resumen aprobado si la IA no lo repitió."""
+    assert _pool is not None
+    row = await _pool.fetchrow(
+        "SELECT id, creada_en, resumen_usuario, ficha FROM consultas.consulta WHERE id=$1::uuid", cid)
+    if not row:
+        return None
+    ficha = row["ficha"]
+    if isinstance(ficha, str):
+        try:
+            ficha = json.loads(ficha)
+        except Exception:
+            ficha = {}
+    ficha = ficha or {}
+    inf = ficha.get("informe_visitante") or {}
+    if not (inf.get("lo_que_entendimos") or "").strip():
+        inf["lo_que_entendimos"] = row["resumen_usuario"] or ""
+    return {"id": str(row["id"]), "creada_en": row["creada_en"],
+            "resumen": row["resumen_usuario"] or "", "problema": ficha.get("problema") or "",
+            "titular": ficha.get("titular") or "", "informe": inf,
+            "palabras_clave": ficha.get("palabras_clave") or [],
+            "costos_aplicables": ficha.get("costos_aplicables") or []}
+
+
 async def guardar_contacto(cid: str, d: dict) -> None:
     assert _pool is not None
     await _pool.execute(

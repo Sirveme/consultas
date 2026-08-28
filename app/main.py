@@ -6,6 +6,7 @@ FastAPI: landing conversacional + API + panel interno. Toda la config vive aquí
 from __future__ import annotations
 
 import os
+import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import quote
@@ -261,7 +262,29 @@ async def api_contacto(payload: dict, request: Request):
     await db.add_evento(cid, "contacto_enviado", {})
     informe = await db.get_informe(cid)   # el entregable que se muestra en la pantalla final
     return JSONResponse({"ok": True, "mensaje": "¡Gracias! Te contactaremos pronto.",
-                         "whatsapp": _wa_url(), "informe": informe})
+                         "whatsapp": _wa_url(), "informe": informe,
+                         "pdf_url": f"/informe/{cid}.pdf"})   # descarga del PDF server-side
+
+
+@app.get("/informe/{consulta_id}.pdf")
+async def informe_pdf(consulta_id: str):
+    """PDF del informe, generado al vuelo. Sin sesión (para poder re-descargar
+    desde el enlace), pero el id es un UUID no adivinable y no hay listados."""
+    try:
+        uuid.UUID(consulta_id)
+    except ValueError:
+        return Response("No encontrado", status_code=404)
+    datos = await db.datos_para_pdf(consulta_id)
+    if not datos:
+        return Response("No encontrado", status_code=404)
+    inf = datos.get("informe") or {}
+    if not ((inf.get("lo_que_entendimos") or "").strip() or inf.get("preguntas")):
+        return Response("Informe aún no disponible", status_code=404)
+    from . import informe_pdf as pdfmod   # import PEREZOSO: reportlab solo aquí
+    pdf = pdfmod.generar(datos)
+    nombre = pdfmod.nombre_archivo(datos.get("palabras_clave"), datos.get("creada_en"))
+    return Response(pdf, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{nombre}"'})
 
 
 @app.post("/api/regenerar-resumen")
@@ -432,7 +455,7 @@ async def salud():
 @app.get("/robots.txt")
 async def robots():
     # Indexa la raíz; bloquea el panel y las APIs.
-    cuerpo = "User-agent: *\nAllow: /$\nDisallow: /panel\nDisallow: /api/\n"
+    cuerpo = "User-agent: *\nAllow: /$\nDisallow: /panel\nDisallow: /api/\nDisallow: /informe/\n"
     return Response(cuerpo, media_type="text/plain")
 
 
