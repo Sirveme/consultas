@@ -57,8 +57,12 @@
     {% if inf.get('lo_que_entendimos') or inf.get('preguntas') %}
     <h3>Informe del visitante</h3>
     <div class="calif-item"><b>Lo que entendimos:</b> <span class="val">{{ inf.get('lo_que_entendimos') or '—' }}</span></div>
+    <div class="calif-item"><b>Qué cambiaría:</b>
+      <ul class="kv" style="margin:4px 0 0">{% for q in inf.get('que_cambiaria') or [] %}<li>{{ q }}</li>{% endfor %}</ul></div>
     <div class="calif-item"><b>Preguntas:</b>
       <ul class="kv" style="margin:4px 0 0">{% for q in inf.get('preguntas') or [] %}<li>{{ q }}</li>{% endfor %}</ul></div>
+    <div class="calif-item"><b>Decisiones a tomar:</b>
+      <ul class="kv" style="margin:4px 0 0">{% for q in inf.get('decisiones_a_tomar') or [] %}<li>{{ q }}</li>{% endfor %}</ul></div>
     <div class="calif-item"><b>Mínimo para implementar:</b>
       <ul class="kv" style="margin:4px 0 0">{% for q in inf.get('minimo_para_implementar') or [] %}<li>{{ q }}</li>{% endfor %}</ul></div>
     <div class="calif-item"><b>Falta definir:</b>
@@ -83,8 +87,28 @@
       {% endfor %}
     </div>
 
-    <h3>Resumen interno</h3>
-    <div class="resumen">{{ c.resumen_interno or '—' }}</div>
+    <h3>Resumen interno (técnico)</h3>
+    {% set ri = c.resumen_interno %}
+    {% if ri is mapping %}
+      {% if ri.get('senales_de_alerta') %}
+      <div style="border:1px solid var(--peligro);border-radius:10px;padding:10px 12px;margin:6px 0 10px">
+        <b style="color:var(--peligro)">⚠ Señales de alerta</b>
+        <ul class="kv" style="margin:4px 0 0">{% for s in ri.get('senales_de_alerta') %}<li>{{ s }}</li>{% endfor %}</ul>
+      </div>
+      {% endif %}
+      <div class="calif-item"><b>Riesgos:</b>
+        <ul class="kv" style="margin:4px 0 0">{% for x in ri.get('riesgos') or [] %}<li>{{ x }}</li>{% endfor %}</ul></div>
+      <div class="calif-item"><b>Síntesis:</b> <span class="val">{{ ri.get('sintesis') or '—' }}</span></div>
+      <div class="calif-item"><b>Complejidad:</b> <span class="tag">{{ ri.get('complejidad') or '—' }}</span>
+        <span class="val">{{ ri.get('justificacion_complejidad') or '' }}</span></div>
+      <div class="calif-item"><b>Componentes:</b>
+        <ul class="kv" style="margin:4px 0 0">{% for x in ri.get('componentes') or [] %}<li>{{ x }}</li>{% endfor %}</ul></div>
+      <div class="calif-item"><b>Preguntas para la llamada:</b>
+        <ol class="kv" style="margin:4px 0 0">{% for x in ri.get('preguntas_para_la_llamada') or [] %}<li>{{ x }}</li>{% endfor %}</ol></div>
+      <div class="calif-item"><b>Encaje con productos:</b> <span class="val">{{ ri.get('encaje_con_productos') or '—' }}</span></div>
+    {% else %}
+      <div class="resumen">{{ ri or '—' }}</div>
+    {% endif %}
 
     <h3>Ficha estructurada</h3>
     <pre class="kv" style="white-space:pre-wrap">{{ c.ficha }}</pre>
