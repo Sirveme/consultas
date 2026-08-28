@@ -182,3 +182,15 @@ th{ color:var(--texto-suave); font-family:var(--f-mono); text-transform:uppercas
 .calif-item{ padding:7px 0; border-bottom:1px solid var(--borde); font-size:var(--t-sm); }
 .calif-item b{ color:var(--texto); } .calif-item .val{ color:var(--texto-suave); }
 .conv-det .burbuja.usuario{ background:var(--superficie-2); }
+
+
+/* ============================================================
+   Clase nueva
+   ============================================================ */
+
+.ejemplos{
+  font-size: var(--t-sm);
+  color: var(--texto-suave);
+  line-height: 1.5;
+  margin: 8px 2px 14px;
+}
