@@ -185,6 +185,7 @@
   };
 
   // --- Contacto -> informe ---
+  var PDF_URL = null;
   function lista(ul, arr) { ul.innerHTML = ""; (arr || []).forEach(function (t) { var li = document.createElement("li"); li.textContent = t; ul.appendChild(li); }); }
   function pintarInforme(inf) {
     inf = inf || {};
@@ -203,13 +204,16 @@
     if (!d.nombre || !d.celular || !d.ciudad) { $("c-msg").textContent = "Completa nombre, celular y ciudad."; $("c-msg").className = "msg err"; return; }
     $("b-contacto").disabled = true; $("c-msg").textContent = "Enviando..."; $("c-msg").className = "msg";
     post("/api/contacto", d).then(function (r) {
-      if (r.j && r.j.ok) { pixel("Lead"); if (r.j.whatsapp) WA = r.j.whatsapp; pintarInforme(r.j.informe); }
+      if (r.j && r.j.ok) { pixel("Lead"); if (r.j.whatsapp) WA = r.j.whatsapp; PDF_URL = r.j.pdf_url || null; pintarInforme(r.j.informe); }
       else { $("b-contacto").disabled = false; $("c-msg").textContent = (r.j && r.j.error) || "No se pudo enviar."; $("c-msg").className = "msg err"; }
     }).catch(function () { $("b-contacto").disabled = false; $("c-msg").textContent = "Error de red."; $("c-msg").className = "msg err"; });
   };
 
-  // Descargar informe = imprimir a PDF del navegador (sin dependencias).
-  $("b-descargar").onclick = function () { post("/api/evento", { tipo: "informe_descargado" }); window.print(); };
+  // Descargar informe = PDF generado en el servidor (Content-Disposition attachment).
+  $("b-descargar").onclick = function () {
+    post("/api/evento", { tipo: "informe_descargado" });
+    if (PDF_URL) window.location.href = PDF_URL;
+  };
 
   // Estado inicial del riel: Necesidad activo.
   setRiel("iniciada");

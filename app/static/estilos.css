@@ -23,7 +23,7 @@ a{ color:var(--verde); }
 .mono{ font-family:var(--f-mono); font-weight:500; text-transform:uppercase; letter-spacing:.14em; }
 .oculto{ display:none !important; }
 
-.wrap{ max-width:640px; margin:0 auto; padding:16px 16px 96px; }
+.wrap{ max-width:720px; margin:0 auto; padding:16px 18px 96px; }
 h1{ font-size:var(--t-2xl); margin:14px 0 6px; }
 h2{ font-size:var(--t-xl); margin:6px 0 12px; }
 h3{ font-size:var(--t-base); margin:0 0 8px; }
@@ -152,18 +152,14 @@ label{ display:block; font-size:var(--t-sm); color:var(--texto-suave); }
   .riel ol{ flex-direction:column; gap:30px; }
   .riel ol::before{ top:11%; bottom:11%; left:5px; right:auto; width:1px; height:auto; }
   .riel .paso{ flex:0; flex-direction:row; gap:10px; text-align:left; }
-  .wrap{ margin-left:calc(var(--riel-w) + 24px); margin-right:24px; }  /* no queda tapado */
+  /* Se reserva el ancho del riel con padding en el body; el contenido se centra
+     (max-width) en el espacio restante, no pegado al riel. */
+  body{ padding-left:var(--riel-w); }
+  .wrap{ margin:0 auto; }
 }
 
-/* ---------- Impresión del informe (Descargar = imprimir a PDF) ---------- */
-@media print{
-  body{ background:#fdfdfb; color:#10231a; font-size:12pt; }
-  .riel,.wa-fijo,.no-print,.pantalla:not(#sg){ display:none !important; }
-  .wrap{ margin:0; max-width:none; padding:0; }
-  .informe{ background:#fdfdfb; border:none; }
-  .informe h2,.informe h3{ color:#10231a; }
-  .informe .bloque{ border-color:#cbd6ce; }
-}
+/* El informe se descarga como PDF generado en el servidor (ver informe_pdf.py),
+   no por impresión del navegador. */
 
 /* ============================================================
    PANEL interno
