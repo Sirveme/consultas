@@ -112,9 +112,9 @@ async def _cuerpo_sin_ia(cid, motivo):
 
 async def _cierre(cid: str, data: dict) -> None:
     """Al cerrar (resumen listo): evento resumen_visto y, si la IA generó el
-    informe con contenido, informe_generado."""
+    informe con contenido, informe_generado. El informe vive dentro de la ficha."""
     await db.add_evento(cid, "resumen_visto", {})
-    inf = (data or {}).get("informe_visitante") or {}
+    inf = ((data or {}).get("ficha") or {}).get("informe_visitante") or {}
     if (inf.get("lo_que_entendimos") or "").strip() or (inf.get("preguntas") or []):
         await db.add_evento(cid, "informe_generado", {})
 
@@ -192,17 +192,19 @@ async def api_responder(payload: dict, request: Request):
     if await db.llamadas_ia_de(cid) >= db.MAX_LLAMADAS_IA or not await db.ia_diaria_ok():
         return JSONResponse(await _cuerpo_sin_ia(cid, "tope"))
 
-    res = await ia.consultar(await db.turnos_de(cid))
+    # Techo duro de 2 preguntas: si ya se hicieron 2, este turno DEBE cerrar. Se le
+    # PIDE a la IA que cierre (cerrar=True) para que genere el resumen + el informe;
+    # no basta con forzar la bandera después (dejaría todo vacío).
+    turnos = await db.turnos_de(cid)
+    cerrar = sum(1 for t in turnos if t["rol"] == "asistente") >= 2
+    res = await ia.consultar(turnos, cerrar=cerrar)
     if not res["ok"]:
         await db.add_evento(cid, "ia_error", {"error": res.get("error"), "detalle": res.get("detalle")})
         return JSONResponse(await _cuerpo_sin_ia(cid, "ia_error"))
 
     data = res["data"]
-    # Techo duro de 2 preguntas: si ya se hicieron 2, forzamos el resumen.
-    turnos = await db.turnos_de(cid)
-    preguntas_hechas = sum(1 for t in turnos if t["rol"] == "asistente")
-    if preguntas_hechas >= 2:
-        data["informacion_suficiente"] = True
+    if cerrar:
+        data["informacion_suficiente"] = True   # defensivo, por si el modelo no la puso
     await db.registrar_turno_ia(cid, data, res["tokens_entrada"], res["tokens_salida"], res["modelo"])
     if data.get("informacion_suficiente"):
         await _cierre(cid, data)
@@ -227,7 +229,7 @@ async def api_corregir(payload: dict, request: Request):
         resp = JSONResponse(await _cuerpo_sin_ia(cid, "tope"))
         _set_sesion(resp, request, {**ses, "corregido": True})
         return resp
-    res = await ia.consultar(await db.turnos_de(cid))
+    res = await ia.consultar(await db.turnos_de(cid), cerrar=True)   # cierra con resumen + informe
     if not res["ok"]:
         await db.add_evento(cid, "ia_error", {"error": res.get("error"), "detalle": res.get("detalle")})
         resp = JSONResponse(await _cuerpo_sin_ia(cid, "ia_error"))
@@ -298,7 +300,7 @@ async def api_regenerar_resumen(payload: dict, request: Request):
         return JSONResponse({"ok": False, "error": "sesión expirada"}, status_code=400)
     if await db.llamadas_ia_de(cid) >= db.MAX_LLAMADAS_IA or not await db.ia_diaria_ok():
         return JSONResponse(await _cuerpo_sin_ia(cid, "tope"))
-    res = await ia.consultar(await db.turnos_de(cid))
+    res = await ia.consultar(await db.turnos_de(cid), cerrar=True)   # cierra con resumen + informe
     if not res["ok"]:
         await db.add_evento(cid, "ia_error", {"error": res.get("error"), "detalle": res.get("detalle")})
         return JSONResponse(await _cuerpo_sin_ia(cid, "ia_error"))

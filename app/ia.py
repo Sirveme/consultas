@@ -32,17 +32,33 @@ MODELO_IA = os.getenv("MODELO_IA", "").strip()   # nunca se asume un modelo por 
 TIMEOUT_S = 25.0
 
 
-def _mensajes_api(turnos: list[dict]) -> list[dict]:
+# Instrucción para FORZAR el cierre: forzar solo la bandera en el código NO hace
+# que el modelo genere el resumen ni el informe (los deja vacíos porque cree que
+# sigue preguntando). Hay que pedírselo explícitamente.
+INSTR_CIERRE = (
+    "INSTRUCCIÓN DEL SISTEMA: Ya tienes suficiente información; NO hagas más "
+    "preguntas. Cierra AHORA la conversación: devuelve informacion_suficiente=true, "
+    "un resumen_usuario claro y completo, e informe_visitante con sus cuatro bloques "
+    "CON CONTENIDO REAL (lo_que_entendimos, preguntas, minimo_para_implementar, "
+    "falta_definir), además de titular y palabras_clave. No dejes esos campos vacíos: "
+    "trabaja con lo que la persona ya te contó.")
+
+
+def _mensajes_api(turnos: list[dict], cerrar: bool = False) -> list[dict]:
     """turnos = [{'rol': 'usuario'|'asistente', 'contenido': str}] -> formato chat."""
     msgs = [{"role": "system", "content": SYSTEM_PROMPT}]
     for t in turnos:
         role = "assistant" if t.get("rol") == "asistente" else "user"
         msgs.append({"role": role, "content": t.get("contenido") or ""})
+    if cerrar:
+        msgs.append({"role": "user", "content": INSTR_CIERRE})
     return msgs
 
 
-async def consultar(turnos: list[dict]) -> dict:
-    """Un turno de la IA sobre la conversación completa (lista de turnos)."""
+async def consultar(turnos: list[dict], cerrar: bool = False) -> dict:
+    """Un turno de la IA sobre la conversación completa. Con cerrar=True se le pide
+    explícitamente cerrar y generar el resumen + el informe (para los cierres
+    forzados: techo de 2 preguntas, corrección y regenerar-resumen)."""
     base = {"ok": False, "data": None, "tokens_entrada": 0, "tokens_salida": 0,
             "modelo": MODELO_IA, "error": None, "detalle": None}
     if not IA_API_KEY or not MODELO_IA:
@@ -51,7 +67,7 @@ async def consultar(turnos: list[dict]) -> dict:
 
     payload = {
         "model": MODELO_IA,
-        "messages": _mensajes_api(turnos),
+        "messages": _mensajes_api(turnos, cerrar),
         # Sin `temperature`: algunos modelos (p. ej. gpt-5.6-luna) solo aceptan el
         # valor por defecto y devuelven 400 con cualquier otro. No se envía.
         "response_format": {"type": "json_schema", "json_schema": ESQUEMA_SALIDA},
