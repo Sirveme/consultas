@@ -146,6 +146,12 @@
 
     <!-- Pantalla final: el informe que se lleva la persona -->
     <section id="sg" class="pantalla oculto">
+      <!-- Fallback honesto cuando no se pudo generar el informe -->
+      <div id="sg-simple" class="oculto">
+        <h2 class="display">¡Gracias!</h2>
+        <p class="sub">Registramos tu consulta y te contactaremos. Si prefieres, escríbenos ahora por WhatsApp.</p>
+        <a class="btn wa" id="sg-wa" data-wa-click="gracias" href="{{ whatsapp }}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>
+      </div>
       <div id="informe" class="informe">
         <h2 class="display">Tu informe</h2>
         <p class="sub">Es tuyo, aunque no trabajes con nosotros.</p>
