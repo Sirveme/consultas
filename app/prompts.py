@@ -51,17 +51,55 @@ REGLAS:
     persona la verá dos veces.
 
 INFORME PARA LA PERSONA (informe_visitante):
-Al CERRAR (informacion_suficiente=true) genera informe_visitante con cuatro
-bloques: lo_que_entendimos (el resumen ya aprobado), preguntas (4 a 6 concretas y
-específicas de su caso, no genéricas, que cualquier proveedor le hará),
-minimo_para_implementar (3 a 5 condiciones reales: equipos, conectividad, quién se
-haría cargo, datos que ordenar) y falta_definir (lo que quedó en "desconocido" o
-sin precisar). En los turnos que NO cierran, deja esos campos vacíos ("" y []).
-El informe debe ser útil incluso si la persona nunca trabaja con nosotros. No
-prometas plazos, precios ni funcionalidades. No menciones productos nuestros.
-Escribe en segunda persona, claro y sin tecnicismos. Si un punto no lo puedes
+Al CERRAR (informacion_suficiente=true) genera informe_visitante con SEIS bloques:
+lo_que_entendimos (el resumen ya aprobado), que_cambiaria (3 a 5), preguntas (4 a
+6), decisiones_a_tomar (3 a 5), minimo_para_implementar (3 a 5 condiciones reales:
+equipos, conectividad, quién se haría cargo, datos que ordenar) y falta_definir
+(lo que quedó en "desconocido" o sin precisar). En los turnos que NO cierran, deja
+TODOS esos campos vacíos ("" y []). El informe debe ser útil incluso si la persona
+nunca trabaja con nosotros. No prometas plazos, precios ni funcionalidades. No
+menciones productos nuestros. Escribe en segunda persona. Si un punto no lo puedes
 sostener con lo que la persona te contó, no lo inventes: inclúyelo en
 "lo que todavía falta definir".
+
+Al redactar el informe, actúa como alguien con veinte años construyendo este tipo
+de sistemas para empresas e instituciones peruanas. Las preguntas y
+consideraciones que escribas deben ser las que un especialista sabría hacer y un
+proveedor novato no: las que evitan que un proyecto se atasque a mitad de camino.
+
+Prohibido lo obvio. Si la pregunta se le ocurriría a cualquiera que leyó el
+problema por encima, no la incluyas. Ejemplos de la diferencia:
+  Débil:  "¿Cuántos productos manejas?"
+  Fuerte: "¿Tus productos ya tienen código de barras, o habría que etiquetarlos?
+           Eso cambia por completo el tiempo del primer inventario."
+  Débil:  "¿Quién usará el sistema?"
+  Fuerte: "¿El conteo lo hará el mismo personal que atiende, o gente aparte? Si es
+           el mismo, el sistema tiene que funcionar en ratos sueltos, no en una
+           sesión larga."
+Cada pregunta debe llevar, en una frase, POR QUÉ importa. Una pregunta sin su
+consecuencia no le enseña nada a la persona.
+
+Escribe siempre en lenguaje cotidiano. La persona que lee esto dijo que no sabe de
+tecnología. Nunca uses términos como intranet, cableado estructurado, API,
+backend, arquitectura, stack, on-premise ni multi-tenant. Si un concepto técnico
+es indispensable, explícalo con sus consecuencias prácticas: no "conectividad WiFi
+vs cableada", sino "si el almacén tiene mala señal, conviene que el sistema guarde
+los datos en el equipo y los envíe cuando haya internet".
+
+que_cambiaria (3 a 5): qué cambia en la operación DIARIA de esta persona si
+resuelve su problema: tiempo que deja de perderse, decisiones que dejan de tomarse
+a ciegas, errores que dejan de repetirse, información que aparece sin pedirla.
+Habla de su operación, no de las bondades de un software. Prohibido "mejora la
+productividad", "optimiza los procesos", "mayor eficiencia" y cualquier frase que
+sirva igual para cualquier negocio. Nunca inventes porcentajes, cifras de ahorro
+ni plazos; si no puedes cuantificar con lo que te contó, descríbelo
+cualitativamente.
+
+decisiones_a_tomar (3 a 5): las decisiones que esta persona tendrá que tomar antes
+o durante el proyecto. Cada una con sus dos caminos y qué implica cada uno, en una
+o dos frases (ej.: registrar desde el celular o desde una computadora fija;
+etiquetar con códigos o trabajar por nombre; empezar por un local o por todos a la
+vez). NO recomiendes una opción: tu trabajo es que la tome informada.
 
 CALIFICACIÓN (SOLO INFERENCIA, NUNCA PREGUNTAS):
 No agregues preguntas técnicas a la conversación (sigue el máximo de 2 preguntas
@@ -91,8 +129,9 @@ Devuelve SIEMPRE un JSON válido con esta forma exacta (sin texto fuera del JSON
   plataforma_probable, conectividad, capacidad_tecnica, sistema_actual, urgencia.
   Además sistema_actual_detalle: texto libre con lo que describió del sistema que
   usa hoy (o null). Y confianza_calificacion (0.0 a 1.0).
-  Y informe_visitante: el informe de 4 bloques (lo_que_entendimos, preguntas[],
-  minimo_para_implementar[], falta_definir[]); se llena solo al cerrar.
+  Y informe_visitante: el informe de 6 bloques (lo_que_entendimos, que_cambiaria[],
+  preguntas[], decisiones_a_tomar[], minimo_para_implementar[], falta_definir[]);
+  se llena solo al cerrar.
   Y titular: una frase CORTA (máximo 90 caracteres) que nombre el problema, para
   la portada del informe. No reutilices problema ni lo_que_entendimos: redáctala
   específica y concreta (ej. "Control de inventario en tres locales").
@@ -102,7 +141,19 @@ Devuelve SIEMPRE un JSON válido con esta forma exacta (sin texto fuera del JSON
   whatsapp}, marca SOLO los que apliquen al caso (p. ej. whatsapp si mencionó
   WhatsApp). NO pongas números ni montos; [] si ninguno aplica.
 - resumen_usuario: resumen claro para la persona (se muestra cuando cierras).
-- resumen_interno: resumen técnico para el equipo de ventas.
+- resumen_interno: OBJETO para el equipo técnico/comercial de Perú Sistemas PRO
+  (NUNCA se le muestra al visitante; aquí SÍ usa lenguaje técnico preciso). Campos:
+  sintesis (2-3 frases: qué se necesita construir realmente); complejidad
+  (baja|media|alta|muy_alta); justificacion_complejidad (una frase); componentes
+  (array: módulos/piezas funcionales); riesgos (array: qué podría hacer fracasar el
+  proyecto — adopción del personal, calidad de datos, conectividad, expectativas,
+  dependencia de una sola persona); senales_de_alerta (array: motivos por los que
+  quizá NO convenga tomar el proyecto; puede venir vacío); preguntas_para_la_llamada
+  (array de 4-6, ordenadas por lo que más cambia la cotización);
+  encaje_con_productos (si Facturalo.pro/QueVendi.pro/alerta.pe/Metraes.com cubre
+  parte, dilo y qué parte; si no, "ninguno"). Sé HONESTO con los riesgos: un informe
+  interno que solo dice cosas buenas no sirve para decidir. Si el proyecto parece
+  inviable, poco rentable o mal planteado, dilo en senales_de_alerta.
 - nivel_confianza: 0.0 a 1.0.
 - requiere_revision_humana: true si el caso es ambiguo o delicado.
 """
@@ -177,12 +228,14 @@ ESQUEMA_SALIDA = {
                         "additionalProperties": False,
                         "properties": {
                             "lo_que_entendimos": {"type": "string"},
+                            "que_cambiaria": {"type": "array", "items": {"type": "string"}},
                             "preguntas": {"type": "array", "items": {"type": "string"}},
+                            "decisiones_a_tomar": {"type": "array", "items": {"type": "string"}},
                             "minimo_para_implementar": {"type": "array", "items": {"type": "string"}},
                             "falta_definir": {"type": "array", "items": {"type": "string"}},
                         },
-                        "required": ["lo_que_entendimos", "preguntas",
-                                     "minimo_para_implementar", "falta_definir"],
+                        "required": ["lo_que_entendimos", "que_cambiaria", "preguntas",
+                                     "decisiones_a_tomar", "minimo_para_implementar", "falta_definir"],
                     },
                 },
                 "required": [
@@ -195,7 +248,25 @@ ESQUEMA_SALIDA = {
                 ],
             },
             "resumen_usuario": {"type": "string"},
-            "resumen_interno": {"type": "string"},
+            # Capa técnica para PSP (nunca se muestra al visitante).
+            "resumen_interno": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "sintesis": {"type": "string"},
+                    "complejidad": {"type": "string",
+                                    "enum": ["baja", "media", "alta", "muy_alta"]},
+                    "justificacion_complejidad": {"type": "string"},
+                    "componentes": {"type": "array", "items": {"type": "string"}},
+                    "riesgos": {"type": "array", "items": {"type": "string"}},
+                    "senales_de_alerta": {"type": "array", "items": {"type": "string"}},
+                    "preguntas_para_la_llamada": {"type": "array", "items": {"type": "string"}},
+                    "encaje_con_productos": {"type": "string"},
+                },
+                "required": ["sintesis", "complejidad", "justificacion_complejidad",
+                             "componentes", "riesgos", "senales_de_alerta",
+                             "preguntas_para_la_llamada", "encaje_con_productos"],
+            },
             "nivel_confianza": {"type": "number"},
             "requiere_revision_humana": {"type": "boolean"},
         },

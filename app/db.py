@@ -116,6 +116,16 @@ async def llamadas_ia_de(cid: str) -> int:
         "SELECT llamadas_ia FROM consultas.consulta WHERE id=$1::uuid", cid) or 0
 
 
+def _resumen_interno_txt(ri) -> str:
+    """resumen_interno pasó de string a OBJETO; se guarda como JSON en la columna
+    text. Devuelve '' cuando viene vacío para que NULLIF no pise el del cierre."""
+    if isinstance(ri, str):
+        return ri
+    if isinstance(ri, dict) and any(ri.values()):
+        return json.dumps(ri, ensure_ascii=False)
+    return ""
+
+
 async def registrar_turno_ia(cid: str, data: dict, te: int, ts: int, modelo: str) -> None:
     """Guarda el mensaje del asistente, suma tokens/llamadas y vuelca ficha/resumen
     y la fase que corresponde."""
@@ -148,7 +158,7 @@ async def registrar_turno_ia(cid: str, data: dict, te: int, ts: int, modelo: str
             WHERE id=$1::uuid
             """,
             cid, fase, json.dumps(data.get("ficha") or {}, ensure_ascii=False),
-            data.get("resumen_usuario") or "", data.get("resumen_interno") or "",
+            data.get("resumen_usuario") or "", _resumen_interno_txt(data.get("resumen_interno")),
             data.get("nivel_confianza") or 0, bool(data.get("requiere_revision_humana")),
             te, ts)
         # Nota: la columna `producto` queda NULL en consultas conversacionales
@@ -313,7 +323,7 @@ async def panel_listar(fase: str = "", campaign: str = "", estado: str = "",
         f"""
         SELECT id, creada_en, ciudad, utm_campaign, estado_lead, fase, nivel_confianza,
                requiere_revision, producto, ficha->>'sector' sector, ficha->>'tipo_proyecto' tipo_proyecto,
-               left(coalesce(resumen_interno, texto_original,''),140) resumen
+               left(coalesce(resumen_usuario, texto_original,''),140) resumen
         FROM consultas.consulta WHERE {' AND '.join(cond)}
         ORDER BY creada_en DESC LIMIT ${len(args)}
         """, *args)
@@ -332,6 +342,13 @@ async def panel_detalle(cid: str) -> Optional[dict]:
         except Exception:
             c["ficha"] = {}
     c["ficha"] = c.get("ficha") or {}
+    # resumen_interno ahora es un objeto guardado como JSON en columna text.
+    ri = c.get("resumen_interno")
+    if isinstance(ri, str) and ri.strip().startswith("{"):
+        try:
+            c["resumen_interno"] = json.loads(ri)
+        except Exception:
+            pass
     msgs = await _pool.fetch(
         "SELECT rol, contenido, modelo, tokens_entrada, tokens_salida, creado_en "
         "FROM consultas.mensaje WHERE consulta_id=$1::uuid ORDER BY id", cid)

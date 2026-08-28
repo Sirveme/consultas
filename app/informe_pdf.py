@@ -129,6 +129,8 @@ def _S():
                                bulletFontName=f["display"], bulletFontSize=13, bulletColor=INT_AMBAR)
     S["req"] = ParagraphStyle("req", fontName=f["normal"], fontSize=9.5, textColor=INT_TEXTO, leading=13)
     S["pend"] = ParagraphStyle("pend", fontName=f["normal"], fontSize=10, textColor=INT_SUAVE, leading=14)
+    S["dec_a"] = ParagraphStyle("da", fontName=f["medium"], fontSize=10, textColor=INT_TEXTO, leading=14)
+    S["dec_b"] = ParagraphStyle("db", fontName=f["normal"], fontSize=9.5, textColor=INT_SUAVE, leading=13)
     S["aviso"] = ParagraphStyle("avi", fontName=f["medium"], fontSize=9.5, textColor=INT_TEXTO, leading=13)
     S["card_lbl"] = ParagraphStyle("cl", fontName=f["mono"], fontSize=7.5, textColor=INT_SUAVE, leading=10)
     S["card_incl"] = ParagraphStyle("ci", fontName=f["normal"], fontSize=8.5, textColor=INT_TEXTO, leading=11.5,
@@ -265,10 +267,11 @@ def _seccion(story, S, numero, titulo, contenido):
     story.append(Spacer(1, 10 * mm))
 
 
-def _req_fila(S, texto):
-    """Requisito: fila con fondo int_realce, esquinas suaves y cuadrado verde."""
+def _req_fila(S, texto, color=INT_VERDE):
+    """Fila con fondo int_realce, esquinas suaves y un cuadrado de color. Verde
+    para 'lo mínimo', ámbar para 'qué cambiaría' (bloque de valor)."""
     cuadro = Table([[""]], colWidths=[3.2 * mm], rowHeights=[3.2 * mm])
-    cuadro.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), INT_VERDE),
+    cuadro.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), color),
                                 ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
                                 ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 0)]))
     t = Table([[cuadro, Paragraph(texto, S["req"])]], colWidths=[8 * mm, (CONT_W - COL_NUM) - 8 * mm])
@@ -278,6 +281,24 @@ def _req_fila(S, texto):
                            ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
                            ("LEFTPADDING", (0, 0), (0, 0), 8), ("LEFTPADDING", (1, 0), (1, 0), 2),
                            ("RIGHTPADDING", (0, 0), (-1, -1), 8)]))
+    return t
+
+
+def _decision_fila(S, texto):
+    """Decisión: barra ámbar corta a la izquierda; disyuntiva en medium y su
+    implicancia en normal (si se puede separar el texto en dos partes)."""
+    txt = (texto or "").strip()
+    p1, p2 = txt, ""
+    for sep in (" — ", " – ", "—", ": "):
+        if sep in txt:
+            p1, p2 = txt.split(sep, 1); break
+    cont = [Paragraph(_xml(p1.strip()), S["dec_a"])]
+    if p2.strip():
+        cont.append(Paragraph(_xml(p2.strip()), S["dec_b"]))
+    t = Table([[cont]], colWidths=[CONT_W - COL_NUM])
+    t.setStyle(TableStyle([("LINEBEFORE", (0, 0), (0, -1), 2.4, INT_AMBAR),
+                           ("LEFTPADDING", (0, 0), (-1, -1), 10), ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                           ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3)]))
     return t
 
 
@@ -306,26 +327,42 @@ def _interiores(datos):
     secciones = []   # (titulo, contenido_flowables)
 
     if (inf.get("lo_que_entendimos") or "").strip():
-        secciones.append(("LO QUE ENTENDIMOS", [Paragraph(inf["lo_que_entendimos"].strip(), S["cuerpo"])]))
+        secciones.append(("LO QUE ENTENDIMOS", [Paragraph(_xml(inf["lo_que_entendimos"].strip()), S["cuerpo"])]))
+
+    # Qué cambiaría (bloque de valor): filas int_realce con cuadrado ÁMBAR.
+    camb = [x for x in (inf.get("que_cambiaria") or []) if (x or "").strip()]
+    if camb:
+        cont = []
+        for x in camb:
+            cont.append(_req_fila(S, _xml(x), color=INT_AMBAR)); cont.append(Spacer(1, 5))
+        secciones.append(("QUÉ CAMBIARÍA EN TU DÍA A DÍA", cont))
 
     preg = [x for x in (inf.get("preguntas") or []) if (x or "").strip()]
     if preg:
         cont = []
         for q in preg:
-            p = Paragraph(q, S["preg"]); p.bulletText = "?"
+            p = Paragraph(_xml(q), S["preg"]); p.bulletText = "?"
             cont.append(p); cont.append(Spacer(1, 3))
         secciones.append(("PREGUNTAS QUE DEBERÍAS TENER RESUELTAS", cont))
+
+    # Decisiones a tomar: barra ámbar corta + disyuntiva/implicancia.
+    dec = [x for x in (inf.get("decisiones_a_tomar") or []) if (x or "").strip()]
+    if dec:
+        cont = []
+        for d in dec:
+            cont.append(_decision_fila(S, d)); cont.append(Spacer(1, 5))
+        secciones.append(("DECISIONES QUE VAS A TENER QUE TOMAR", cont))
 
     req = [x for x in (inf.get("minimo_para_implementar") or []) if (x or "").strip()]
     if req:
         cont = []
         for r in req:
-            cont.append(_req_fila(S, r)); cont.append(Spacer(1, 5))
+            cont.append(_req_fila(S, _xml(r))); cont.append(Spacer(1, 5))
         secciones.append(("LO MÍNIMO PARA IMPLEMENTARLO", cont))
 
     pend = [x for x in (inf.get("falta_definir") or []) if (x or "").strip()]
     if pend:
-        cont = [ListFlowable([ListItem(Paragraph(x, S["pend"]), leftIndent=10, value="•") for x in pend],
+        cont = [ListFlowable([ListItem(Paragraph(_xml(x), S["pend"]), leftIndent=10, value="•") for x in pend],
                              bulletType="bullet", bulletColor=INT_SUAVE, leftIndent=8)]
         secciones.append(("LO QUE TODAVÍA FALTA DEFINIR", cont))
 
