@@ -187,8 +187,25 @@
   // --- Contacto -> informe ---
   var PDF_URL = null;
   function lista(ul, arr) { ul.innerHTML = ""; (arr || []).forEach(function (t) { var li = document.createElement("li"); li.textContent = t; ul.appendChild(li); }); }
+  function informeConContenido(inf) {
+    inf = inf || {};
+    return (inf.preguntas || []).length || (inf.minimo_para_implementar || []).length || (inf.falta_definir || []).length;
+  }
   function pintarInforme(inf) {
     inf = inf || {};
+    var dl = document.querySelector("#sg .row-btns");
+    if (!informeConContenido(inf)) {
+      // Sin informe útil: NO mostramos secciones vacías ni el botón de descarga
+      // (el PDF daría 404). Mensaje honesto + WhatsApp.
+      $("informe").classList.add("oculto");
+      if (dl) dl.classList.add("oculto");
+      var wa = $("sg-wa"); if (wa && WA) wa.href = WA;
+      $("sg-simple").classList.remove("oculto");
+      show("sg"); return;
+    }
+    $("sg-simple").classList.add("oculto");
+    $("informe").classList.remove("oculto");
+    if (dl) dl.classList.remove("oculto");
     $("inf-1").textContent = inf.lo_que_entendimos || $("resumen").textContent || "";
     lista($("inf-2"), inf.preguntas);
     lista($("inf-3"), inf.minimo_para_implementar);
